@@ -214,7 +214,8 @@ if ('serviceWorker' in navigator) {
 <div class="hdr">
   <div class="hdr-logo">B-Mak</div>
   <div class="hdr-title" id="hdr-title">Nouveau rapport</div>
-  <a href="./index.html" class="hdr-back">✕ Annuler</a>
+  <span id="draft-indicator" style="font-size:11px;color:var(--teal);opacity:0;transition:opacity .5s">✓ Brouillon sauvegardé</span>
+  <a href="./index.html" class="hdr-back" onclick="saveDraft()">✕ Quitter</a>
 </div>
 
 <div class="main" id="form-main">
@@ -387,7 +388,7 @@ if ('serviceWorker' in navigator) {
 if (typeof init === 'function') init();
 initDB().then(() => { if (typeof init === 'function') init(); });
 
-let curStep=1, selClient=null, selMachine=null, tasks=[], sigDots=0, sigCtx=null, savedSigImg=null;
+let curStep=1, selClient=null, selMachine=null, tasks=[], sigDots=0, sigCtx=null, savedSigImg=null, brouillonId=null;
 const D={tech:'',date:'',rnum:'',tstart:'',tend:'',dur:'',signer:''};
 
 // STEPS
@@ -395,6 +396,8 @@ function renderStepDots(n){
   document.getElementById('steps').innerHTML=[1,2,3,4].map(i=>'<div class="step-dot'+(i<=n?' done':'')+'"></div>').join('');
 }
 function goStep(n){
+  // Auto-save draft when navigating between steps
+  if (selClient && n > 1) saveDraft();
   [1,2,3,4,5].forEach(i=>{const el=document.getElementById('s'+i);if(el)el.style.display=i===n?'block':'none';});
   curStep=n;
   renderStepDots(n);
@@ -624,7 +627,11 @@ async function genPDF(){
   try{buildReportPDF({taches:tasks,signer:D.signer,rnum:D.rnum,dur:D.dur,date:D.date,tech:D.tech,cid:selClient.id,mid:selMachine?selMachine.id:null}, selClient, selMachine, savedSigImg);}catch(e){alert('Erreur PDF: '+e.message);}
   // Save to history
   const rapport={id:uid(),cid:selClient.id,mid:selMachine?selMachine.id:null,tech:D.tech,date:D.date,rnum:D.rnum,dur:D.dur,tstart:D.tstart,tend:D.tend,taches:tasks.map(t=>({itype:t.itype,desc:t.desc,etat:t.etat,reco:t.reco,photos:t.photos})),signer:D.signer,sigImg:savedSigImg,savedAt:new Date().toISOString()};
+  // If this was a draft, give it the same ID to overwrite
+  if (brouillonId) rapport.id = brouillonId;
+  rapport.statut = 'final';
   await DB.saveRapport(rapport);
+  brouillonId = null;
 
   // Auto-create a "Terminé" appel de service in the calendar
   // (only if not coming from an existing appel)
@@ -662,8 +669,72 @@ async function genPDF(){
 
 
 
+// ── BROUILLON ──
+async function saveDraft() {
+  if (!selClient) return; // Need at least a client to save
+  const draftData = {
+    id: brouillonId || uid(),
+    cid: selClient.id,
+    mid: selMachine ? selMachine.id : null,
+    tech: document.getElementById('f-tech').value || D.tech,
+    date: document.getElementById('f-date').value || D.date,
+    rnum: document.getElementById('f-rnum').value || D.rnum,
+    dur: D.dur, tstart: D.tstart, tend: D.tend,
+    taches: tasks.map(t => {
+      // Capture current textarea values
+      const descEl = document.querySelector('.task-desc[data-tid="'+t.id+'"]');
+      const recoEl = document.querySelector('.task-reco[data-tid="'+t.id+'"]');
+      if (descEl) t.desc = descEl.value;
+      if (recoEl) t.reco = recoEl.value;
+      return {itype:t.itype, desc:t.desc, etat:t.etat, reco:t.reco, photos:t.photos};
+    }),
+    signer: document.getElementById('f-signer') ? document.getElementById('f-signer').value : '',
+    sigImg: savedSigImg,
+    statut: 'brouillon',
+    savedAt: new Date().toISOString(),
+    created_at: new Date().toISOString()
+  };
+  if (!brouillonId) brouillonId = draftData.id;
+  else draftData.created_at = undefined; // Don't overwrite created_at on update
+  await DB.saveRapport(draftData);
+  // Show subtle save indicator
+  const ind = document.getElementById('draft-indicator');
+  if (ind) { ind.style.opacity='1'; setTimeout(()=>ind.style.opacity='0', 2000); }
+}
+
+async function loadDraft(id) {
+  const rapports = await DB.rapports();
+  const draft = rapports.find(r => r.id === id);
+  if (!draft) return;
+  brouillonId = draft.id;
+  // Pre-fill client
+  if (draft.cid) {
+    await DB.clients();
+    pickClient(draft.cid);
+    // Wait for client to load then fill rest
+    setTimeout(async () => {
+      if (draft.mid) { setTimeout(()=>{ const el=document.getElementById('mi-'+draft.mid); if(el)el.click(); },200); }
+      if (draft.tech) { document.getElementById('f-tech').value=draft.tech; const s=document.getElementById('f-tech-sel'); for(let i=0;i<s.options.length;i++){if(s.options[i].value===draft.tech){s.selectedIndex=i;break;}} }
+      if (draft.date) document.getElementById('f-date').value=draft.date;
+      if (draft.rnum) document.getElementById('f-rnum').value=draft.rnum;
+      // Restore tasks
+      if (draft.taches && draft.taches.length) {
+        tasks = draft.taches.map(t => ({...t, id:'task_'+Date.now()+Math.random(), photos: t.photos||[]}));
+        renderTasks();
+      }
+      // Restore time
+      if (draft.tstart) { const [h,m]=draft.tstart.split(':'); TW.sh=parseInt(h)||8; TW.sm=parseInt(m)||0; twUpdate(); }
+      if (draft.tend)   { const [h,m]=draft.tend.split(':');   TW.eh=parseInt(h)||17; TW.em=parseInt(m)||0; twUpdate(); }
+      D.dur = draft.dur || '';
+    }, 400);
+  }
+}
+
+// Auto-save every 30 seconds
+setInterval(() => { if (selClient && curStep > 1) saveDraft(); }, 30000);
+
 function resetForm(){
-  selClient=null;selMachine=null;tasks=[];sigDots=0;savedSigImg=null;
+  selClient=null;selMachine=null;tasks=[];sigDots=0;savedSigImg=null;brouillonId=null;
   Object.keys(D).forEach(k=>D[k]='');
   localStorage.removeItem('bmak_last_appel_id');
   document.getElementById('client-search-wrap').style.display='block';
@@ -679,71 +750,71 @@ function resetForm(){
 }
 
 // Pre-fill from client page or calendar
-const prefillCid=localStorage.getItem('bmak_prefill_client');
-if(prefillCid){pickClient(prefillCid);localStorage.removeItem('bmak_prefill_client');}
-const prefillAppel=localStorage.getItem('bmak_prefill_appel');
-if(prefillAppel){
-  const appel=DB.appels().find(a=>a.id===prefillAppel);
-  if(appel){
-    // Date — use first date of series if multi-date
-    const appelDate=appel.dates&&appel.dates.length?appel.dates[0]:appel.date;
-    document.getElementById('f-date').value=appelDate;
-    // Heure → pre-fill time pickers
-    if(appel.heure){
-      document.getElementById('f-start').value=appel.heure;
-      // Set the fancy picker too
-      const [hh,mm]=appel.heure.split(':');
-      document.getElementById('sel-h').value=hh;
-      document.getElementById('sel-m').value=mm||'00';
-      calcTime();
-    }
-    // Technicien
-    if(appel.tech){
-      document.getElementById('f-tech').value=appel.tech;
-      const techSel=document.getElementById('f-tech-sel');
-      for(let i=0;i<techSel.options.length;i++){if(techSel.options[i].value===appel.tech){techSel.selectedIndex=i;break;}}
-    }
-    // Machine
-    if(appel.mid){
-      // loadMachines already called by pickClient — select the right machine after render
-      setTimeout(()=>{
-        const el=document.getElementById('mi-'+appel.mid);
-        if(el){el.click();}
-      },100);
-    }
-    // Notes → pre-fill first task description
-    if(appel.notes&&tasks.length){tasks[0].desc=appel.notes;renderTasks();}
-    // Titre → first task itype hint
-    if(appel.titre&&tasks.length){
-      const lower=appel.titre.toLowerCase();
-      if(lower.includes('maintenan')||lower.includes('préven')){tasks[0].itype='Maintenance préventive';}
-      else if(lower.includes('répara')||lower.includes('repair')){tasks[0].itype='Réparation';}
-      else if(lower.includes('install')){tasks[0].itype='Installation';}
-      else if(lower.includes('diagnos')){tasks[0].itype='Diagnostic';}
-      // Set task description to appel titre if no notes
-      if(!appel.notes){tasks[0].desc=appel.titre;}
-      renderTasks();
-    }
-    // Report number with appel date
-    if(!document.getElementById('f-rnum').value){
-      document.getElementById('f-rnum').value='SR-'+appelDate.replace(/-/g,'').slice(2);
-    }
-  }
-  localStorage.removeItem('bmak_prefill_appel');
-    localStorage.setItem('bmak_last_appel_id', prefillAppel);
-}
-
 document.getElementById('f-date').value=document.getElementById('f-date').value||new Date().toISOString().split('T')[0];
 addTask();
 renderStepDots(1);
 
 async function init() {
   await Promise.all([DB.clients(), DB.machines(), DB.techs()]);
+  // Populate tech dropdown
   const techs = DB.techsSync();
   const sel = document.getElementById('f-tech-sel');
   if(sel && techs.length){
     sel.innerHTML = '<option value="">— Choisir un technicien —</option>' +
       techs.filter(t=>t.statut!=="Inactif").map(t=>'<option value="'+t.prenom+' '+t.nom+'">'+t.prenom+' '+t.nom+'</option>').join('');
+  }
+  // Prefill from appel de service (AFTER data is loaded)
+  const prefillCid=localStorage.getItem('bmak_prefill_client');
+  if(prefillCid){pickClient(prefillCid);localStorage.removeItem('bmak_prefill_client');}
+  const prefillAppelId=localStorage.getItem('bmak_prefill_appel');
+  if(prefillAppelId){
+    await DB.appels(); // ensure appels are loaded
+    const appel=DB.appelsSync().find(a=>a.id===prefillAppelId);
+    if(appel){
+      const appelDate=appel.dates&&appel.dates.length&&appel.dates[0]!=='0000-00-00'?appel.dates[0]:appel.date;
+      // Date
+      if(appelDate&&appelDate!=='0000-00-00') document.getElementById('f-date').value=appelDate;
+      // Time
+      if(appel.heure){
+        const [hh,mm]=appel.heure.split(':');
+        TW.sh=parseInt(hh)||8; TW.sm=parseInt(mm)||0; twUpdate();
+      }
+      // Tech
+      if(appel.tech){
+        document.getElementById('f-tech').value=appel.tech;
+        const techSel=document.getElementById('f-tech-sel');
+        for(let i=0;i<techSel.options.length;i++){if(techSel.options[i].value===appel.tech){techSel.selectedIndex=i;break;}}
+      }
+      // Machine — wait for pickClient to render machines first
+      if(appel.mid){
+        setTimeout(()=>{
+          const el=document.getElementById('mi-'+appel.mid);
+          if(el) el.click();
+        },300);
+      }
+      // First task: description from appel
+      if(tasks.length){
+        const lower=(appel.titre||'').toLowerCase();
+        if(lower.includes('maintenan')||lower.includes('préven')) tasks[0].itype='Maintenance préventive';
+        else if(lower.includes('répara')||lower.includes('repair')) tasks[0].itype='Réparation';
+        else if(lower.includes('install')) tasks[0].itype='Installation';
+        else if(lower.includes('diagnos')) tasks[0].itype='Diagnostic';
+        tasks[0].desc = appel.notes || appel.titre || '';
+        renderTasks();
+      }
+      // Report number
+      if(appelDate&&appelDate!=='0000-00-00'){
+        document.getElementById('f-rnum').value='SR-'+appelDate.replace(/-/g,'').slice(2);
+      }
+    }
+    localStorage.removeItem('bmak_prefill_appel');
+    localStorage.setItem('bmak_last_appel_id', prefillAppelId);
+  }
+  // Load draft if coming from historique
+  const draftId = localStorage.getItem('bmak_draft_id');
+  if (draftId) {
+    localStorage.removeItem('bmak_draft_id');
+    await loadDraft(draftId);
   }
 }
 init();
@@ -757,7 +828,7 @@ if('serviceWorker' in navigator) {
 <script>
 // Force reload if db.js is cached old version
 setTimeout(function() {
-  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 14) {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 15) {
     console.warn('Old db.js detected, forcing reload...');
     window.location.reload(true);
   }
