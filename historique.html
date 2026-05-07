@@ -401,4 +401,19 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(e=>console.warn('SW:',e));
 }
 </script>
+<script>
+setTimeout(function() {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 27) {
+    var reloadCount = parseInt(sessionStorage.getItem('reloadCount') || '0');
+    if (reloadCount < 2) {
+      sessionStorage.setItem('reloadCount', reloadCount + 1);
+      window.location.reload(true);
+    } else {
+      sessionStorage.removeItem('reloadCount');
+    }
+  } else {
+    sessionStorage.removeItem('reloadCount');
+  }
+}, 1000);
+</script>
 </body></html>
