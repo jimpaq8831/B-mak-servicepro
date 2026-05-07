@@ -1,6 +1,6 @@
 // ── B-Mak ServicePro — db.js ── v12
 // Supabase cloud DB with localStorage offline fallback
-const DB_VERSION = 20;
+const DB_VERSION = 21;
 
 // ┌─────────────────────────────────────────────┐
 // │  REPLACE THESE TWO VALUES AFTER SETUP       │
@@ -102,7 +102,7 @@ async function dbUpsert(table, row) {
     if (row.savedAt !== undefined) { row.saved_at = row.savedAt; delete row.savedAt; }
     // Keep only columns that exist in Supabase schema
     const RAPPORT_COLS = ['id','cid','mid','tech','date','rnum','dur','tstart','tend',
-      'taches','signer','sig_img','saved_at','statut','created_at','updated_at'];
+      'taches','signer','sig_img','saved_at','statut','appel_id','created_at','updated_at'];
     Object.keys(row).forEach(k => {
       if (!RAPPORT_COLS.includes(k) || row[k] === undefined) delete row[k];
     });
