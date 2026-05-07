@@ -294,42 +294,66 @@ function showDetail(id){
   const m = r.mid ? DB.machineById(r.mid) : null;
   const photoTotal = r.taches ? r.taches.reduce((acc,t)=>acc+(Array.isArray(t.photos)?t.photos.length:(t.photos||0)),0) : 0;
   const isBrouillon = r.statut === 'brouillon';
+  const el = document.getElementById('detail-content');
+  el.innerHTML = '';
 
-  let html = '<div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:14px">'+(c?c.nom:'Rapport')+'</div>';
+  // Title
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:18px;font-weight:700;color:var(--navy);margin-bottom:14px';
+  title.textContent = c ? c.nom : 'Rapport';
+  el.appendChild(title);
 
-  html += '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">' +
-    (isBrouillon
-      ? '<button class="btn btn-primary" style="font-size:14px;padding:11px" onclick="continueDraft(''+r.id+'')">✏️ Continuer le rapport</button>'
-      : '<button class="btn btn-primary" style="font-size:14px;padding:11px" onclick="regenPDF(''+r.id+'')">📄 Télécharger le PDF</button>'
-    ) +
-    '<button class="btn btn-out" onclick="deleteRapport(''+r.id+'')" style="width:auto;padding:11px 14px">🗑️</button>' +
-    '</div>';
+  // Action buttons
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap';
+  if(isBrouillon){
+    const b = document.createElement('button');
+    b.className='btn btn-primary'; b.style.cssText='font-size:14px;padding:11px';
+    b.textContent='✏️ Continuer le rapport';
+    b.onclick = () => continueDraft(r.id);
+    btnRow.appendChild(b);
+  } else {
+    const b = document.createElement('button');
+    b.className='btn btn-primary'; b.style.cssText='font-size:14px;padding:11px';
+    b.textContent='📄 Télécharger le PDF';
+    b.onclick = () => regenPDF(r.id);
+    btnRow.appendChild(b);
+  }
+  const delBtn = document.createElement('button');
+  delBtn.className='btn btn-out'; delBtn.style.cssText='width:auto;padding:11px 14px';
+  delBtn.textContent='🗑️';
+  delBtn.onclick = () => deleteRapport(r.id);
+  btnRow.appendChild(delBtn);
+  el.appendChild(btnRow);
 
-  html += '<div class="card" style="margin-bottom:10px">' +
+  // Info card
+  let infoHTML = '<div class="card" style="margin-bottom:10px">' +
     '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:5px">Général</div>' +
     '<div style="font-size:13px;color:var(--text3)">'+fmtDate(r.date)+' · '+(r.tech||'')+(r.rnum?' · No. '+r.rnum:'')+(r.dur?' · '+r.dur:'')+'</div>' +
-    (m?'<div style="font-size:13px;color:var(--text3);margin-top:4px">'+m.type+' · '+m.marque+' · S/N: '+(m.serial||'—')+'</div>':'')+
-    (r.signer?'<div style="font-size:13px;color:var(--text3);margin-top:4px">✍️ Signé par : '+r.signer+'</div>':'')+
+    (m?'<div style="font-size:13px;color:var(--text3);margin-top:4px">'+m.type+' · '+m.marque+'</div>':'')+
+    (r.signer?'<div style="font-size:13px;color:var(--text3);margin-top:4px">✍️ '+r.signer+'</div>':'')+
     (photoTotal?'<div style="font-size:13px;color:var(--text3);margin-top:4px">📷 '+photoTotal+' photo(s)</div>':'')+
     '</div>';
 
-  if(r.taches && r.taches.length){
-    r.taches.forEach((t,i) => {
-      const s = statusSty(t.etat);
-      const pCount = Array.isArray(t.photos) ? t.photos.length : (t.photos||0);
-      html += '<div class="card" style="margin-bottom:10px;border-left:3px solid var(--teal)">' +
-        '<div style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;margin-bottom:6px">Tâche '+(i+1)+(t.itype?' — '+t.itype:'')+'</div>' +
-        '<div style="font-size:14px;color:var(--navy);margin-bottom:6px">'+t.desc+'</div>' +
-        (t.etat?'<span class="badge" style="background:'+s.bg+';color:'+s.color+';border:1px solid '+s.border+'">'+t.etat+'</span>':'')+
-        (t.reco?'<div style="font-size:13px;color:var(--text3);margin-top:6px">💡 '+t.reco+'</div>':'')+
-        (pCount?'<div style="font-size:12px;color:var(--teal);margin-top:4px;font-weight:600">📷 '+pCount+' photo(s)</div>':'')+
-        '</div>';
-    });
-  }
+  if(r.taches) r.taches.forEach((t,i) => {
+    const s = statusSty(t.etat);
+    const pCount = Array.isArray(t.photos)?t.photos.length:(t.photos||0);
+    infoHTML += '<div class="card" style="margin-bottom:10px;border-left:3px solid var(--teal)">' +
+      '<div style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;margin-bottom:6px">Tâche '+(i+1)+(t.itype?' — '+t.itype:'')+'</div>' +
+      '<div style="font-size:14px;color:var(--navy);margin-bottom:6px">'+(t.desc||'')+'</div>' +
+      (t.etat?'<span class="badge" style="background:'+s.bg+';color:'+s.color+';border:1px solid '+s.border+'">'+t.etat+'</span>':'')+
+      (t.reco?'<div style="font-size:13px;color:var(--text3);margin-top:6px">💡 '+t.reco+'</div>':'')+
+      (pCount?'<div style="font-size:12px;color:var(--teal);margin-top:4px;font-weight:600">📷 '+pCount+'</div>':'')+
+      '</div>';
+  });
 
-  document.getElementById('detail-content').innerHTML = html;
-  document.getElementById('modal-detail').style.display = 'flex';
+  const infoDiv = document.createElement('div');
+  infoDiv.innerHTML = infoHTML;
+  el.appendChild(infoDiv);
+
+  document.getElementById('modal-detail').style.display='flex';
 }
+
 
 function regenPDF(id){
   const r = DB.rapportsSync().find(x => x.id === id);
