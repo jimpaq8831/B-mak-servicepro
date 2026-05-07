@@ -18,17 +18,7 @@
   <script src="./db.js"></script>
 </head><body>
 <script>
-// Unregister old service workers and clear all caches
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(r => r.unregister());
-  });
-  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-}
-</script>
-
-<script>
-// Unregister old service workers and clear all caches
+// Unregister service worker to prevent caching
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {
     regs.forEach(r => r.unregister());
@@ -345,9 +335,5 @@ trInp.addEventListener('blur',function(){setTimeout(()=>trDrop.style.display='no
 function cancelTransfer(){transferToClientId=null;document.getElementById('m-transfer-wrap').style.display='block';document.getElementById('m-transfer-card').style.display='none';trInp.value='';}
 </script>
 
-<script>
-if('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
-}
-</script>
+
 </body></html>

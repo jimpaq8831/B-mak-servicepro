@@ -191,17 +191,7 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
   </script>
 </head><body>
 <script>
-// Unregister old service workers and clear all caches
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(r => r.unregister());
-  });
-  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-}
-</script>
-
-<script>
-// Unregister old service workers and clear all caches
+// Unregister service worker to prevent caching
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {
     regs.forEach(r => r.unregister());
@@ -977,9 +967,5 @@ init();
 
 </script>
 
-<script>
-if('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
-}
-</script>
+
 </body></html>

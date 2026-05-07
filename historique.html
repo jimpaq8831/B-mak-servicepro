@@ -396,11 +396,7 @@ async function init() {
 init();
 </script>
 
-<script>
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').catch(e=>console.warn('SW:',e));
-}
-</script>
+
 <script>
 setTimeout(function() {
   if (typeof DB_VERSION === 'undefined' || DB_VERSION < 27) {
@@ -415,5 +411,14 @@ setTimeout(function() {
     sessionStorage.removeItem('reloadCount');
   }
 }, 1000);
+</script>
+<script>
+// Unregister service worker to prevent caching
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
 </script>
 </body></html>
