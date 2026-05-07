@@ -972,6 +972,7 @@ function renderKanban() {
         '<div class="kanban-card-actions" style="display:flex;gap:3px;flex-wrap:wrap;margin-top:6px">'+
           '<button class="kanban-action rapport-btn" data-id="'+a.id+'" title="Créer rapport" style="padding:3px 6px;font-size:14px">📋</button>'+
           '<button class="kanban-action edit-btn" data-id="'+a.id+'" title="Modifier" style="padding:3px 6px;font-size:14px">✏️</button>'+
+          (col.key !== 'Non-cédulé' ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="Non-cédulé" title="→ Non-cédulé" style="padding:2px 5px;font-size:11px;color:#6c6c70">⬜</button>' : '')+
           (col.key !== 'En attente' ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="En attente" title="→ En attente" style="padding:2px 5px;font-size:11px;color:#b44f00">⏳</button>' : '')+
           (col.key !== 'En cours'   ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="En cours" title="→ En cours" style="padding:2px 5px;font-size:11px;color:var(--teal)">▶</button>' : '')+
           (col.key !== 'Terminé'    ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="Terminé" title="→ Terminé" style="padding:2px 5px;font-size:11px;color:#1a7a4a">✓</button>' : '')+
@@ -999,14 +1000,15 @@ function renderKanban() {
     const newStatus = this.dataset.status;
     const needsDate = (newStatus === 'En cours' || newStatus === 'Terminé' || newStatus === 'En attente');
     const hasDate = appel.date && appel.date !== '0000-00-00' && appel.date !== '';
-    if (needsDate && !hasDate) {
-      // Show quick date picker modal
+    if (newStatus === 'Non-cédulé') {
+      // Clear date when moving back to Non-cédulé
+      await DB.saveAppel({...appel, statut: newStatus, date: '0000-00-00', dates: []});
+      renderKanban(); renderCal(); renderAllAppels();
+    } else if (needsDate && !hasDate) {
       quickDatePick(appel, newStatus);
     } else {
       await DB.saveAppel({...appel, statut: newStatus});
-      renderKanban();
-      renderCal();
-      renderAllAppels();
+      renderKanban(); renderCal(); renderAllAppels();
     }
   }));
 }

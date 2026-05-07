@@ -107,17 +107,26 @@ async function init() {
     {n:clients.length,l:'Clients'},
     {n:machines.length,l:'Machines'},
     {n:rapports.length,l:'Rapports'},
-    {n:appels.filter(a=>a.date>=today).length,l:'Appels à venir'}
+    {n:appels.filter(a=>a.statut!=='Terminé').length,l:'Appels à venir'}
   ].map(s=>'<div class="stat"><div class="stat-n">'+s.n+'</div><div class="stat-l">'+s.l+'</div></div>').join('');
 
   // Prochains appels (7 jours)
   const week=new Date(Date.now()+7*864e5).toISOString().split('T')[0];
-  const prochains=appels.filter(a=>a.date>=today&&a.date<=week).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
+  // Include: dated appels this week + undated Non-cédulé/En attente
+  const dated=appels.filter(a=>a.date&&a.date!=='0000-00-00'&&a.date>=today&&a.date<=week);
+  const undated=appels.filter(a=>(!a.date||a.date==='0000-00-00')&&(a.statut==='Non-cédulé'||a.statut==='En attente'));
+  const prochains=[...dated.sort((a,b)=>a.date.localeCompare(b.date)),...undated].slice(0,4);
   const elA=document.getElementById('appels-today');
   if(!prochains.length){elA.innerHTML='<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun appel cette semaine</div></div>';}
   else{elA.innerHTML=prochains.map(a=>{
     const c=DB.clientById(a.cid);
-    return '<div class="appel-card"><div class="appel-date">'+fmtDate(a.date)+' — '+a.heure+'</div><div class="appel-title">'+(c?c.nom:'Client inconnu')+'</div><div class="appel-sub">'+a.titre+'</div></div>';
+    const dateLabel=(!a.date||a.date==='0000-00-00')?'📅 '+( a.statut||'Non-cédulé'):fmtDate(a.date)+' — '+a.heure;
+    const statColors={'Non-cédulé':'#8e8e93','En attente':'#ff9500','En cours':'#037F8C','Terminé':'#34c759'};
+    const sc=statColors[a.statut||'Non-cédulé']||'#8e8e93';
+    return '<div class="appel-card" style="border-left-color:'+sc+'">'+
+      '<div class="appel-date">'+dateLabel+'</div>'+
+      '<div class="appel-title">'+(c?c.nom:'Client inconnu')+'</div>'+
+      '<div class="appel-sub">'+a.titre+'</div></div>';
   }).join('');}
 
   // Derniers rapports
