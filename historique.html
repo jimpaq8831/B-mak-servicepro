@@ -256,7 +256,7 @@ async function init() {
   await Promise.all([DB.clients(), DB.machines(), DB.rapports()]);
   setFilter('all');
 }
-initDB().then(() => { if (typeof init === 'function') init(); });
+init();
 let curFilter='all', curSearch='';
 
 function setFilter(f){
@@ -274,7 +274,7 @@ function setFilter(f){
 }
 
 function render(){
-  const rapports=DB.rapportsSync();
+  const rapports=DB.rapportsSync(); // populated by init()'s await DB.rapports()
   const q=curSearch.toLowerCase();
   const filtered=rapports.filter(r=>{
     const c=DB.clientById(r.cid);
