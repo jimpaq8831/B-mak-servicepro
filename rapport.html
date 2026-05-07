@@ -386,9 +386,6 @@ if ('serviceWorker' in navigator) {
 
 
 <script>
-if (typeof init === 'function') init();
-initDB().then(() => { if (typeof init === 'function') init(); });
-
 let curStep=1, selClient=null, selMachine=null, tasks=[], sigDots=0, sigCtx=null, savedSigImg=null, brouillonId=null;
 const D={tech:'',date:'',rnum:'',tstart:'',tend:'',dur:'',signer:''};
 
@@ -955,10 +952,6 @@ async function init() {
     localStorage.removeItem('bmak_prefill_client');
     pickClient(prefillCid);
   }
-}
-init();
-
-
 }
 init();
 
