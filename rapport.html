@@ -564,11 +564,7 @@ document.getElementById('btn-s2').addEventListener('click',function(){
   D.tend=document.getElementById('f-end').value;
   goStep(4);
 });
-document.getElementById('btn-s3').addEventListener('click',function(){
-  D.signer=document.getElementById('f-signer').value.trim();
-  if(sigDots<4){alert('Veuillez obtenir la signature du client.');return;}
-  goStep(4);
-});
+// signature step removed
 
 // SIGNATURE
 function initSig(){
@@ -862,7 +858,7 @@ async function applyDraft(draft) {
 
 async function init() {
   // Load all data from Supabase
-  await Promise.all([DB.clients(), DB.machines(), DB.techs(), DB.appels()]);
+  await Promise.all([DB.clients(), DB.machines(), DB.techs(), DB.appels(), DB.rapports()]);
 
   // Populate tech dropdown
   const techs = DB.techsSync();
