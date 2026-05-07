@@ -901,7 +901,7 @@ init();
 <script>
 // Force reload if db.js is cached old version
 setTimeout(function() {
-  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 22) {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 23) {
     console.warn('Old db.js detected, forcing reload...');
     window.location.reload(true);
   }

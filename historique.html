@@ -1,23 +1,61 @@
 <!DOCTYPE html>
 <html lang="fr"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#022840">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="B-Mak ServicePro">
+<link rel="manifest" href="./manifest.json">
 <title>B-Mak — Historique</title>
-  <meta charset="UTF-8">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-  <meta name="theme-color" content="#022840">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="B-Mak ServicePro">
-  <link rel="manifest" href="./manifest.json">
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="./seed.js"></script>
-  <script src="./db.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script>
+<link rel="stylesheet" href="./style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="./seed.js"></script>
+<script src="./db.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div id="sync-badge" style="display:none;position:fixed;top:58px;right:8px;z-index:99;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;transition:opacity .3s"></div>
+
+<div class="hdr">
+  <div class="hdr-logo">B-Mak</div>
+  <div class="hdr-title">Historique des rapports</div>
+</div>
+
+<div class="main">
+  <div class="field" style="margin-bottom:12px">
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input id="search" class="search-input" type="text" placeholder="Rechercher par client, technicien, No...">
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px">
+    <button class="badge badge-teal" id="f-all" onclick="setFilter('all')">Tous</button>
+    <button class="badge" id="f-brouillon" onclick="setFilter('brouillon')" style="background:#fff;color:var(--text3);border:1px solid var(--border)">✏️ Brouillons</button>
+    <button class="badge" id="f-bon" onclick="setFilter('bon')" style="background:#fff;color:var(--text3);border:1px solid var(--border)">✅ Bon état</button>
+    <button class="badge" id="f-suivi" onclick="setFilter('suivi')" style="background:#fff;color:var(--text3);border:1px solid var(--border)">⚠️ Suivi requis</button>
+    <button class="badge" id="f-hors" onclick="setFilter('hors')" style="background:#fff;color:var(--text3);border:1px solid var(--border)">🔴 Hors service</button>
+  </div>
+
+  <div id="rapport-list"></div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-bg" id="modal-detail" style="display:none">
+<div class="modal">
+  <button class="modal-close" onclick="closeDetail()">✕</button>
+  <div id="detail-content"></div>
+</div></div>
+
+<nav class="nav">
+  <a href="./index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
+  <a href="./clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
+  <a href="./rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
+  <a href="./techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
+  <a href="./calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
+</nav>
+
+<script>
 // ── B-Mak ServicePro — pdf.js ──
 // Shared PDF builder. Used by rapport.html and historique.html.
 
@@ -188,152 +226,144 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
   doc.save(filename);
 }
 
-  </script>
-</head><body>
-<script>
-// Unregister old service workers and clear all caches
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(r => r.unregister());
-  });
-  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-}
-</script>
-
-<script>
-// Unregister old service workers and clear all caches
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(r => r.unregister());
-  });
-  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-}
-</script>
-<div id="sync-badge" style="display:none;position:fixed;top:58px;right:8px;z-index:99;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;transition:opacity .3s"></div>
-
-<div class="hdr">
-  <div class="hdr-logo">B-Mak</div>
-  <div class="hdr-title">Historique des rapports</div>
-</div>
-
-<div class="main">
-  <div class="field" style="margin-bottom:12px">
-    <div class="search-wrap">
-      <span class="search-ico">🔍</span>
-      <input id="search" class="search-input" type="text" placeholder="Rechercher par client, technicien, No...">
-    </div>
-  </div>
-
-  <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px">
-    <button class="badge badge-teal" id="f-all" onclick="setFilter('all')">Tous</button>
-    <button class="badge" id="f-brouillon" onclick="setFilter('brouillon')" style="background:#fff;color:var(--text3);border:1px solid var(--border)">✏️ Brouillons</button>
-    <button class="badge" id="f-bon" onclick="setFilter('bon')" style="background:#fff;color:var(--text3);border:1px solid var(--border)">✅ Bon état</button>
-    <button class="badge" id="f-suivi" onclick="setFilter('suivi')" style="background:#fff;color:var(--text3);border:1px solid var(--border)">⚠️ Suivi requis</button>
-    <button class="badge" id="f-hors" onclick="setFilter('hors')" style="background:#fff;color:var(--text3);border:1px solid var(--border)">🔴 Hors service</button>
-  </div>
-
-  <div id="rapport-list"></div>
-</div>
-
-<!-- DETAIL MODAL -->
-<div class="modal-bg" id="modal-detail" style="display:none">
-<div class="modal">
-  <button class="modal-close" onclick="closeDetail()">✕</button>
-  <div id="detail-content"></div>
-</div></div>
-
-<nav class="nav">
-  <a href="./index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
-  <a href="./clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
-  <a href="./rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
-  <a href="./techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
-  <a href="./calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
-</nav>
-
-
-<script>
-async function init() {
-  await Promise.all([DB.clients(), DB.machines(), DB.rapports()]);
-  setFilter('all');
-}
-init();
 let curFilter='all', curSearch='';
 
 function setFilter(f){
   curFilter=f;
   ['all','brouillon','bon','suivi','hors'].forEach(x=>{
     const el=document.getElementById('f-'+x);
+    if(!el) return;
     const isActive=x===f;
-    el.style.background=isActive?'var(--teal-light)':'';
-    el.style.color=isActive?'var(--petrol)':'';
-    el.style.border=isActive?'1px solid var(--teal)':'';
-    if(!isActive){el.className='badge';el.style.cssText='background:#fff;color:var(--text3);border:1px solid var(--border)';}
-    else{el.className='badge badge-teal';}
+    if(isActive){ el.className='badge badge-teal'; el.style.cssText=''; }
+    else{ el.className='badge'; el.style.cssText='background:#fff;color:var(--text3);border:1px solid var(--border)'; }
   });
   render();
 }
 
 function render(){
-  const rapports=DB.rapportsSync(); // populated by init()'s await DB.rapports()
-  const q=curSearch.toLowerCase();
-  const filtered=rapports.filter(r=>{
-    const c=DB.clientById(r.cid);
-    const matchQ=!q||(c&&c.nom.toLowerCase().includes(q))||(r.tech&&r.tech.toLowerCase().includes(q))||(r.rnum&&r.rnum.toLowerCase().includes(q));
-    if(!matchQ)return false;
-    if(curFilter==='all') return r.statut !== 'brouillon'; // hide brouillons in "Tous"
-    const etats=r.taches?r.taches.map(t=>t.etat||'').join(' '):'';
-    if(curFilter==='brouillon') return r.statut === 'brouillon';
-    if(curFilter==='bon') return etats.includes('Bon') && r.statut !== 'brouillon';
-    if(curFilter==='suivi') return (etats.includes('Suivi')||etats.includes('Pièces')) && r.statut !== 'brouillon';
-    if(curFilter==='hors') return etats.includes('Hors') && r.statut !== 'brouillon';
-    return true;
+  const rapports = DB.rapportsSync();
+  const q = curSearch.toLowerCase();
+  const filtered = rapports.filter(r => {
+    const c = DB.clientById(r.cid);
+    const matchQ = !q
+      || (c && c.nom.toLowerCase().includes(q))
+      || (r.tech && r.tech.toLowerCase().includes(q))
+      || (r.rnum && r.rnum.toLowerCase().includes(q));
+    if(!matchQ) return false;
+    const isBrouillon = r.statut === 'brouillon';
+    const etats = r.taches ? r.taches.map(t=>t.etat||'').join(' ') : '';
+    if(curFilter==='all')       return !isBrouillon;
+    if(curFilter==='brouillon') return isBrouillon;
+    if(curFilter==='bon')       return !isBrouillon && etats.includes('Bon');
+    if(curFilter==='suivi')     return !isBrouillon && (etats.includes('Suivi')||etats.includes('Pièces'));
+    if(curFilter==='hors')      return !isBrouillon && etats.includes('Hors');
+    return !isBrouillon;
   });
 
-  const el=document.getElementById('rapport-list');
+  const el = document.getElementById('rapport-list');
   if(!filtered.length){
     el.innerHTML='<div class="empty"><div class="empty-ico">📁</div><div class="empty-txt">Aucun rapport trouvé</div></div>';
     return;
   }
-  el.innerHTML=filtered.map(r=>{
-    const c=DB.clientById(r.cid);
-    const m=r.mid?DB.machineById(r.mid):null;
-    const firstEtat=r.taches&&r.taches[0]?r.taches[0].etat:'';
-    const s=statusSty(firstEtat);
-    const photoTotal=r.taches?r.taches.reduce((acc,t)=>acc+(Array.isArray(t.photos)?t.photos.length:(t.photos||0)),0):0;
+  el.innerHTML = filtered.map(r => {
+    const c = DB.clientById(r.cid);
+    const m = r.mid ? DB.machineById(r.mid) : null;
+    const firstEtat = r.taches && r.taches[0] ? r.taches[0].etat : '';
+    const s = statusSty(firstEtat);
+    const photoTotal = r.taches ? r.taches.reduce((acc,t)=>acc+(Array.isArray(t.photos)?t.photos.length:(t.photos||0)),0) : 0;
     const isBrouillon = r.statut === 'brouillon';
-    return '<div class="rapport-card" data-id="'+r.id+'" style="'+(isBrouillon?'border-left:3px solid #ff9500':'')+'">'+ 
-      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'+
-      '<div style="flex:1;min-width:0">'+
-      '<div class="rapport-date">'+(isBrouillon?'✏️ BROUILLON · ':'')+fmtDate(r.date)+' · '+r.tech+(r.rnum?' · '+r.rnum:'')+(r.dur?' · '+r.dur:'')+'</div>'+
-      '<div class="rapport-title">'+( c?c.nom:'Client inconnu')+'</div>'+
-      '<div class="rapport-sub">'+( m?m.type+' · ':'')+(r.taches?r.taches.length+' tâche(s)':'')+(photoTotal?' · 📷 '+photoTotal:'')+'</div>'+
-      '</div>'+
+    return '<div class="rapport-card" data-id="'+r.id+'" style="'+(isBrouillon?'border-left:3px solid #ff9500;':'')+'">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">' +
+      '<div style="flex:1;min-width:0">' +
+      '<div class="rapport-date">'+(isBrouillon?'✏️ BROUILLON · ':'')+fmtDate(r.date)+' · '+(r.tech||'')+(r.rnum?' · '+r.rnum:'')+(r.dur?' · '+r.dur:'')+'</div>' +
+      '<div class="rapport-title">'+(c?c.nom:'Client inconnu')+'</div>' +
+      '<div class="rapport-sub">'+(m?m.type+' · ':'')+(r.taches?r.taches.length+' tâche(s)':'')+(photoTotal?' · 📷 '+photoTotal:'')+'</div>' +
+      '</div>' +
       (firstEtat?'<span class="badge" style="background:'+s.bg+';color:'+s.color+';border:1px solid '+s.border+';flex-shrink:0">'+firstEtat.split(' ')[0]+'</span>':'')+
       '</div></div>';
   }).join('');
   el.querySelectorAll('.rapport-card').forEach(el=>{
-    el.addEventListener('click',function(){showDetail(this.dataset.id);});
+    el.addEventListener('click', function(){ showDetail(this.dataset.id); });
   });
 }
 
 function showDetail(id){
-  const r=DB.rapports().find(x=>x.id===id);
-  if(!r)return;
-  const c=DB.clientById(r.cid);
-  const m=r.mid?DB.machineById(r.mid):null;
-  const photoTotal=r.taches?r.taches.reduce((acc,t)=>acc+(Array.isArray(t.photos)?t.photos.length:(t.photos||0)),0):0;
-  const canRegen=true;
+  const r = DB.rapportsSync().find(x => x.id === id);
+  if(!r) return;
+  const c = DB.clientById(r.cid);
+  const m = r.mid ? DB.machineById(r.mid) : null;
+  const photoTotal = r.taches ? r.taches.reduce((acc,t)=>acc+(Array.isArray(t.photos)?t.photos.length:(t.photos||0)),0) : 0;
+  const isBrouillon = r.statut === 'brouillon';
 
-  let html='<div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:14px">'+( c?c.nom:'Rapport')+'</div>';
+  let html = '<div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:14px">'+(c?c.nom:'Rapport')+'</div>';
 
-  // Regen PDF button — prominent at top
-    const isBrouillon = r.statut === 'brouillon';
-  html+='<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">'+
+  html += '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">' +
     (isBrouillon
-      ? '<button class="btn btn-primary" style="font-size:14px;padding:11px" onclick="continueDraft(\''+r.id+'\')">✏️ Continuer le rapport</button>'
-      : '<button class="btn btn-primary" style="font-size:14px;padding:11px" onclick="regenPDF(\''+r.id+'\')">'+
-          (canRegen?'📄 Télécharger le PDF':'📄 Régénérer le PDF')+
-        '</button>'
-    )+
-    '<button class="btn btn-out" onclick="deleteRapport(\''+r.id+'\'" style="width:auto;padding:11px 14px">🗑️</button>'+
-  '</div>';>
+      ? '<button class="btn btn-primary" style="font-size:14px;padding:11px" onclick="continueDraft(''+r.id+'')">✏️ Continuer le rapport</button>'
+      : '<button class="btn btn-primary" style="font-size:14px;padding:11px" onclick="regenPDF(''+r.id+'')">📄 Télécharger le PDF</button>'
+    ) +
+    '<button class="btn btn-out" onclick="deleteRapport(''+r.id+'')" style="width:auto;padding:11px 14px">🗑️</button>' +
+    '</div>';
+
+  html += '<div class="card" style="margin-bottom:10px">' +
+    '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:5px">Général</div>' +
+    '<div style="font-size:13px;color:var(--text3)">'+fmtDate(r.date)+' · '+(r.tech||'')+(r.rnum?' · No. '+r.rnum:'')+(r.dur?' · '+r.dur:'')+'</div>' +
+    (m?'<div style="font-size:13px;color:var(--text3);margin-top:4px">'+m.type+' · '+m.marque+' · S/N: '+(m.serial||'—')+'</div>':'')+
+    (r.signer?'<div style="font-size:13px;color:var(--text3);margin-top:4px">✍️ Signé par : '+r.signer+'</div>':'')+
+    (photoTotal?'<div style="font-size:13px;color:var(--text3);margin-top:4px">📷 '+photoTotal+' photo(s)</div>':'')+
+    '</div>';
+
+  if(r.taches && r.taches.length){
+    r.taches.forEach((t,i) => {
+      const s = statusSty(t.etat);
+      const pCount = Array.isArray(t.photos) ? t.photos.length : (t.photos||0);
+      html += '<div class="card" style="margin-bottom:10px;border-left:3px solid var(--teal)">' +
+        '<div style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;margin-bottom:6px">Tâche '+(i+1)+(t.itype?' — '+t.itype:'')+'</div>' +
+        '<div style="font-size:14px;color:var(--navy);margin-bottom:6px">'+t.desc+'</div>' +
+        (t.etat?'<span class="badge" style="background:'+s.bg+';color:'+s.color+';border:1px solid '+s.border+'">'+t.etat+'</span>':'')+
+        (t.reco?'<div style="font-size:13px;color:var(--text3);margin-top:6px">💡 '+t.reco+'</div>':'')+
+        (pCount?'<div style="font-size:12px;color:var(--teal);margin-top:4px;font-weight:600">📷 '+pCount+' photo(s)</div>':'')+
+        '</div>';
+    });
+  }
+
+  document.getElementById('detail-content').innerHTML = html;
+  document.getElementById('modal-detail').style.display = 'flex';
+}
+
+function regenPDF(id){
+  const r = DB.rapportsSync().find(x => x.id === id);
+  if(!r){ alert('Rapport introuvable'); return; }
+  const c = DB.clientById(r.cid);
+  if(!c){ alert('Client introuvable.'); return; }
+  try { buildReportPDF(r); } catch(e){ alert('Erreur PDF: '+e.message); }
+}
+
+function continueDraft(id){
+  localStorage.setItem('bmak_draft_id', id);
+  location.href = './rapport.html';
+}
+
+async function deleteRapport(id){
+  if(!confirm('Supprimer ce rapport définitivement ?')) return;
+  await DB.delRapport(id);
+  closeDetail();
+  render();
+}
+
+function closeDetail(){ document.getElementById('modal-detail').style.display='none'; }
+document.getElementById('search').addEventListener('input', function(){ curSearch=this.value; render(); });
+
+async function init() {
+  await Promise.all([DB.clients(), DB.machines(), DB.rapports()]);
+  setFilter('all');
+}
+init();
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(e=>console.warn('SW:',e));
+}
+</script>
+</body></html>
