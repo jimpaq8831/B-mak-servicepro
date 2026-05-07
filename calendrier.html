@@ -65,6 +65,29 @@
 .statut-pill.s-orange{border-color:#ff9500;background:#fff8ee;color:#b44f00}
 .statut-pill.s-blue{border-color:var(--teal);background:var(--teal-light);color:var(--petrol)}
 .statut-pill.s-green{border-color:#34c759;background:#e6f9f0;color:#1a7a4a}
+
+/* ── KANBAN ── */
+.kanban-toolbar{display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.kanban-filter{flex:1;min-width:120px}
+.kanban-filter select{padding:8px 12px;font-size:13px;border:1.5px solid var(--border);border-radius:8px;background:#fff;width:100%}
+.kanban-board{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:start}
+@media(max-width:700px){.kanban-board{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.kanban-board{grid-template-columns:1fr}}
+.kanban-col{background:#fff;border-radius:10px;border:1px solid var(--border);overflow:hidden}
+.kanban-col-hdr{padding:10px 12px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between}
+.kanban-col-hdr .count{font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,0.3)}
+.kanban-col-body{padding:8px;display:flex;flex-direction:column;gap:6px;min-height:60px}
+.kanban-card{background:#f8f8f8;border-radius:8px;padding:10px;cursor:pointer;border:1px solid var(--border);transition:box-shadow .15s}
+.kanban-card:active{box-shadow:0 2px 8px rgba(2,40,64,0.15)}
+.kanban-card-client{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kanban-card-titre{font-size:12px;color:var(--text3);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kanban-card-meta{display:flex;flex-direction:column;gap:3px}
+.kanban-card-date{font-size:11px;color:var(--text3)}
+.kanban-card-tech{font-size:11px;color:var(--teal);font-weight:600}
+.kanban-card-actions{display:flex;gap:4px;margin-top:6px}
+.kanban-action{background:none;border:1px solid var(--border);border-radius:5px;padding:3px 7px;font-size:11px;cursor:pointer;color:var(--text3);white-space:nowrap}
+.kanban-action:active{background:var(--teal-light)}
+.kanban-empty{font-size:12px;color:var(--text3);text-align:center;padding:16px 8px;font-style:italic}
 </style>
 </head><body>
 <script>
@@ -90,10 +113,36 @@ if ('serviceWorker' in navigator) {
 
 <div class="hdr">
   <div class="hdr-logo">B-Mak</div>
-  <div class="hdr-title">Calendrier</div>
+  <div class="hdr-title" id="hdr-title">Calendrier</div>
+  <div style="display:flex;gap:4px;margin-left:auto">
+    <button id="btn-cal" onclick="setView('cal')" style="background:var(--teal);border:none;color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">📅 Cal</button>
+    <button id="btn-kanban" onclick="setView('kanban')" style="background:rgba(255,255,255,0.15);border:none;color:rgba(255,255,255,0.7);padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">📋 Kanban</button>
+  </div>
 </div>
 
 <div class="main">
+
+<!-- ── KANBAN VIEW ── -->
+<div id="view-kanban" style="display:none">
+  <div class="kanban-toolbar">
+    <div class="kanban-filter">
+      <select id="kanban-tech-filter" onchange="renderKanban()">
+        <option value="">👷 Tous les techniciens</option>
+      </select>
+    </div>
+    <div class="kanban-filter">
+      <select id="kanban-prio-filter" onchange="renderKanban()">
+        <option value="">🎯 Toutes les priorités</option>
+        <option value="Urgente">🔴 Urgente</option>
+        <option value="Normale">🟢 Normale</option>
+      </select>
+    </div>
+  </div>
+  <div class="kanban-board" id="kanban-board"></div>
+</div>
+
+<!-- ── CALENDAR VIEW ── -->
+<div id="view-cal">
   <div class="card" style="padding:12px">
     <div class="cal-nav">
       <button class="cal-nav-btn" onclick="prevMonth()">‹</button>
@@ -114,6 +163,7 @@ if ('serviceWorker' in navigator) {
   <div id="all-appels"></div>
 </div>
 
+</div><!-- /view-cal -->
 <button class="fab" onclick="showAddAppel()">+</button>
 
 <!-- ══════════════════════════════════════
@@ -856,5 +906,103 @@ setTimeout(function() {
     window.location.reload(true);
   }
 }, 500);
+
+// ── VIEW TOGGLE ──
+let curView = 'cal';
+function setView(v) {
+  curView = v;
+  document.getElementById('view-cal').style.display = v === 'cal' ? 'block' : 'none';
+  document.getElementById('view-kanban').style.display = v === 'kanban' ? 'block' : 'none';
+  document.getElementById('hdr-title').textContent = v === 'cal' ? 'Calendrier' : 'Kanban';
+  document.getElementById('btn-cal').style.background = v === 'cal' ? 'var(--teal)' : 'rgba(255,255,255,0.15)';
+  document.getElementById('btn-cal').style.color = v === 'cal' ? '#fff' : 'rgba(255,255,255,0.7)';
+  document.getElementById('btn-kanban').style.background = v === 'kanban' ? 'var(--teal)' : 'rgba(255,255,255,0.15)';
+  document.getElementById('btn-kanban').style.color = v === 'kanban' ? '#fff' : 'rgba(255,255,255,0.7)';
+  if (v === 'kanban') renderKanban();
+}
+
+// ── KANBAN ──
+const KANBAN_COLS = [
+  { key: 'Non-cédulé', label: 'Non-cédulé', bg: '#6c6c70', light: '#f2f2f7' },
+  { key: 'En attente',  label: 'En attente',  bg: '#ff9500', light: '#fff8ee' },
+  { key: 'En cours',    label: 'En cours',    bg: '#037F8C', light: '#e6f4f5' },
+  { key: 'Terminé',     label: 'Terminé',     bg: '#34c759', light: '#e6f9f0' },
+];
+
+function renderKanban() {
+  const appels = DB.appelsSync();
+  const techFilter = document.getElementById('kanban-tech-filter').value;
+  const prioFilter = document.getElementById('kanban-prio-filter').value;
+
+  // Populate tech filter
+  const techs = [...new Set(appels.map(a => a.tech).filter(Boolean))];
+  const sel = document.getElementById('kanban-tech-filter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">👷 Tous les techniciens</option>' +
+    techs.map(t => '<option value="'+t+'"'+(t===cur?' selected':'')+'>'+t+'</option>').join('');
+
+  // Filter appels
+  let filtered = appels;
+  if (techFilter) filtered = filtered.filter(a => a.tech === techFilter);
+  if (prioFilter) filtered = filtered.filter(a => a.prio === prioFilter);
+
+  const board = document.getElementById('kanban-board');
+  board.innerHTML = KANBAN_COLS.map(col => {
+    const cards = filtered.filter(a => (a.statut || 'Non-cédulé') === col.key)
+      .sort((a, b) => {
+        // Urgent first, then by date
+        if (a.prio === 'Urgente' && b.prio !== 'Urgente') return -1;
+        if (b.prio === 'Urgente' && a.prio !== 'Urgente') return 1;
+        return (a.date||'9999').localeCompare(b.date||'9999');
+      });
+
+    const cardsHTML = cards.length ? cards.map(a => {
+      const c = DB.clientById(a.cid);
+      const m = a.mid ? DB.machineById(a.mid) : null;
+      const dateLabel = (!a.date || a.date === '0000-00-00') ? '📅 Sans date' : '📅 ' + fmtDate(a.date) + (a.heure ? ' ' + a.heure : '');
+      const urgent = a.prio === 'Urgente' ? '<span style="font-size:10px;background:#fff0ef;color:#ff3b30;padding:1px 5px;border-radius:10px;font-weight:700;margin-left:4px">🔴 URGENT</span>' : '';
+      return '<div class="kanban-card" data-id="'+a.id+'">'+
+        '<div class="kanban-card-client">'+(c?c.nom:'Client?')+urgent+'</div>'+
+        '<div class="kanban-card-titre">'+a.titre+'</div>'+
+        '<div class="kanban-card-meta">'+
+        '<div class="kanban-card-date">'+dateLabel+'</div>'+
+        (a.tech?'<div class="kanban-card-tech">👷 '+a.tech+'</div>':'')+
+        (m?'<div class="kanban-card-date">🔧 '+m.type+'</div>':'')+
+        '</div>'+
+        '<div class="kanban-card-actions">'+
+          '<button class="kanban-action rapport-btn" data-id="'+a.id+'">📋</button>'+
+          '<button class="kanban-action edit-btn" data-id="'+a.id+'">✏️</button>'+
+          // Quick status change buttons
+          (col.key !== 'En attente' ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="En attente">⏳</button>' : '')+
+          (col.key !== 'En cours'   ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="En cours">▶️</button>' : '')+
+          (col.key !== 'Terminé'    ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="Terminé">✅</button>' : '')+
+        '</div>'+
+      '</div>';
+    }).join('') : '<div class="kanban-empty">Aucun appel</div>';
+
+    return '<div class="kanban-col">'+
+      '<div class="kanban-col-hdr" style="background:'+col.bg+';color:#fff">'+
+        col.label+
+        '<span class="count">'+cards.length+'</span>'+
+      '</div>'+
+      '<div class="kanban-col-body">'+cardsHTML+'</div>'+
+    '</div>';
+  }).join('');
+
+  // Attach events
+  board.querySelectorAll('.rapport-btn').forEach(b => b.addEventListener('click', function(e){e.stopPropagation();startRapport(this.dataset.id);}));
+  board.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', function(e){e.stopPropagation();editAppel(this.dataset.id);}));
+  board.querySelectorAll('.status-btn').forEach(b => b.addEventListener('click', async function(e){
+    e.stopPropagation();
+    const appels = DB.appelsSync();
+    const appel = appels.find(a => a.id === this.dataset.id);
+    if (appel) {
+      await DB.saveAppel({...appel, statut: this.dataset.status});
+      renderKanban();
+      renderCal();
+    }
+  }));
+}
+
 </script>
 </body></html>
