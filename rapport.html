@@ -695,7 +695,7 @@ async function saveDraft() {
     created_at: new Date().toISOString()
   };
   if (!brouillonId) brouillonId = draftData.id;
-  else draftData.created_at = undefined; // Don't overwrite created_at on update
+  else delete draftData.created_at; // Don't overwrite created_at on update
   await DB.saveRapport(draftData);
   // Show subtle save indicator
   const ind = document.getElementById('draft-indicator');
@@ -703,32 +703,51 @@ async function saveDraft() {
 }
 
 async function loadDraft(id) {
-  const rapports = await DB.rapports();
+  const rapports = DB.rapportsSync();
   const draft = rapports.find(r => r.id === id);
-  if (!draft) return;
+  if (!draft) { console.warn('Draft not found:', id); return; }
   brouillonId = draft.id;
-  // Pre-fill client
+  
+  // Step 1: Pick client
   if (draft.cid) {
-    await DB.clients();
     pickClient(draft.cid);
-    // Wait for client to load then fill rest
-    setTimeout(async () => {
-      if (draft.mid) { setTimeout(()=>{ const el=document.getElementById('mi-'+draft.mid); if(el)el.click(); },200); }
-      if (draft.tech) { document.getElementById('f-tech').value=draft.tech; const s=document.getElementById('f-tech-sel'); for(let i=0;i<s.options.length;i++){if(s.options[i].value===draft.tech){s.selectedIndex=i;break;}} }
-      if (draft.date) document.getElementById('f-date').value=draft.date;
-      if (draft.rnum) document.getElementById('f-rnum').value=draft.rnum;
-      // Restore tasks
-      if (draft.taches && draft.taches.length) {
-        tasks = draft.taches.map(t => ({...t, id:'task_'+Date.now()+Math.random(), photos: t.photos||[]}));
-        renderTasks();
-      }
-      // Restore time
-      if (draft.tstart) { const [h,m]=draft.tstart.split(':'); TW.sh=parseInt(h)||8; TW.sm=parseInt(m)||0; twUpdate(); }
-      if (draft.tend)   { const [h,m]=draft.tend.split(':');   TW.eh=parseInt(h)||17; TW.em=parseInt(m)||0; twUpdate(); }
-      D.dur = draft.dur || '';
-    }, 400);
+    await new Promise(r => setTimeout(r, 600)); // wait for machines to render
   }
+  
+  // Step 2: Select machine
+  if (draft.mid) {
+    const machEl = document.getElementById('mi-' + draft.mid);
+    if (machEl) machEl.click();
+    await new Promise(r => setTimeout(r, 100));
+  }
+  
+  // Step 3: Fill fields
+  if (draft.tech) {
+    document.getElementById('f-tech').value = draft.tech;
+    const ts = document.getElementById('f-tech-sel');
+    for(let i=0;i<ts.options.length;i++){if(ts.options[i].value===draft.tech){ts.selectedIndex=i;break;}}
+  }
+  if (draft.date) document.getElementById('f-date').value = draft.date;
+  if (draft.rnum) document.getElementById('f-rnum').value = draft.rnum;
+  
+  // Step 4: Restore time
+  if (draft.tstart) { const [h,m]=draft.tstart.split(':'); TW.sh=parseInt(h)||8; TW.sm=parseInt(m)||0; }
+  if (draft.tend)   { const [h,m]=draft.tend.split(':');   TW.eh=parseInt(h)||17; TW.em=parseInt(m)||0; }
+  twUpdate();
+  
+  // Step 5: Restore tasks
+  if (draft.taches && draft.taches.length) {
+    tasks = draft.taches.map(t => ({
+      ...t,
+      id: 'task_' + Date.now() + Math.random().toString(36).slice(2,6),
+      photos: Array.isArray(t.photos) ? t.photos : []
+    }));
+    renderTasks();
+  }
+  
+  console.log('Draft loaded:', draft.cid, draft.mid, draft.taches?.length, 'tasks');
 }
+
 
 // Auto-save every 30 seconds
 setInterval(() => { if (selClient && curStep > 1) saveDraft(); }, 30000);
@@ -775,7 +794,7 @@ async function init() {
       localStorage.removeItem('bmak_prefill_client');
       localStorage.removeItem('bmak_prefill_appel');
       localStorage.setItem('bmak_last_appel_id', prefillAppelId);
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 800)); // wait for machines to render
       const appelDate = appel.dates&&appel.dates.length&&appel.dates[0]!=='0000-00-00' ? appel.dates[0] : appel.date;
       if(appelDate&&appelDate!=='0000-00-00') document.getElementById('f-date').value=appelDate;
       if(appel.heure){ const [hh,mm]=appel.heure.split(':'); TW.sh=parseInt(hh)||8; TW.sm=parseInt(mm)||0; twUpdate(); }
@@ -810,7 +829,7 @@ if('serviceWorker' in navigator) {
 <script>
 // Force reload if db.js is cached old version
 setTimeout(function() {
-  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 16) {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 17) {
     console.warn('Old db.js detected, forcing reload...');
     window.location.reload(true);
   }
