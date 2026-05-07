@@ -1,6 +1,6 @@
 // ── B-Mak ServicePro — db.js ── v12
 // Supabase cloud DB with localStorage offline fallback
-const DB_VERSION = 15;
+const DB_VERSION = 16;
 
 // ┌─────────────────────────────────────────────┐
 // │  REPLACE THESE TWO VALUES AFTER SETUP       │

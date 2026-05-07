@@ -97,3 +97,6 @@ create policy "public_all" on rapports for all using (true) with check (true);
 -- Add rapport_id to appels (run if missing)
 ALTER TABLE appels ADD COLUMN IF NOT EXISTS rapport_id text;
 ALTER TABLE appels ADD COLUMN IF NOT EXISTS statut text DEFAULT 'Non-cédulé';
+
+-- Add statut to rapports table
+ALTER TABLE rapports ADD COLUMN IF NOT EXISTS statut text DEFAULT 'final';

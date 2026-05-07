@@ -755,7 +755,8 @@ addTask();
 renderStepDots(1);
 
 async function init() {
-  await Promise.all([DB.clients(), DB.machines(), DB.techs()]);
+  // Load ALL data first — including appels for prefill
+  await Promise.all([DB.clients(), DB.machines(), DB.techs(), DB.appels()]);
   // Populate tech dropdown
   const techs = DB.techsSync();
   const sel = document.getElementById('f-tech-sel');
@@ -763,59 +764,40 @@ async function init() {
     sel.innerHTML = '<option value="">— Choisir un technicien —</option>' +
       techs.filter(t=>t.statut!=="Inactif").map(t=>'<option value="'+t.prenom+' '+t.nom+'">'+t.prenom+' '+t.nom+'</option>').join('');
   }
-  // Prefill from appel de service (AFTER data is loaded)
-  const prefillCid=localStorage.getItem('bmak_prefill_client');
-  if(prefillCid){pickClient(prefillCid);localStorage.removeItem('bmak_prefill_client');}
-  const prefillAppelId=localStorage.getItem('bmak_prefill_appel');
-  if(prefillAppelId){
-    await DB.appels(); // ensure appels are loaded
-    const appel=DB.appelsSync().find(a=>a.id===prefillAppelId);
-    if(appel){
-      const appelDate=appel.dates&&appel.dates.length&&appel.dates[0]!=='0000-00-00'?appel.dates[0]:appel.date;
-      // Date
+  // Prefill from appel de service
+  const prefillAppelId = localStorage.getItem('bmak_prefill_appel');
+  const prefillCid = localStorage.getItem('bmak_prefill_client');
+  if(prefillAppelId) {
+    const appel = DB.appelsSync().find(a=>a.id===prefillAppelId);
+    if(appel) {
+      const cidToUse = appel.cid || prefillCid;
+      if(cidToUse) pickClient(cidToUse);
+      localStorage.removeItem('bmak_prefill_client');
+      localStorage.removeItem('bmak_prefill_appel');
+      localStorage.setItem('bmak_last_appel_id', prefillAppelId);
+      await new Promise(r => setTimeout(r, 500));
+      const appelDate = appel.dates&&appel.dates.length&&appel.dates[0]!=='0000-00-00' ? appel.dates[0] : appel.date;
       if(appelDate&&appelDate!=='0000-00-00') document.getElementById('f-date').value=appelDate;
-      // Time
-      if(appel.heure){
-        const [hh,mm]=appel.heure.split(':');
-        TW.sh=parseInt(hh)||8; TW.sm=parseInt(mm)||0; twUpdate();
-      }
-      // Tech
-      if(appel.tech){
-        document.getElementById('f-tech').value=appel.tech;
-        const techSel=document.getElementById('f-tech-sel');
-        for(let i=0;i<techSel.options.length;i++){if(techSel.options[i].value===appel.tech){techSel.selectedIndex=i;break;}}
-      }
-      // Machine — wait for pickClient to render machines first
-      if(appel.mid){
-        setTimeout(()=>{
-          const el=document.getElementById('mi-'+appel.mid);
-          if(el) el.click();
-        },300);
-      }
-      // First task: description from appel
+      if(appel.heure){ const [hh,mm]=appel.heure.split(':'); TW.sh=parseInt(hh)||8; TW.sm=parseInt(mm)||0; twUpdate(); }
+      if(appel.tech){ document.getElementById('f-tech').value=appel.tech; const ts=document.getElementById('f-tech-sel'); for(let i=0;i<ts.options.length;i++){if(ts.options[i].value===appel.tech){ts.selectedIndex=i;break;}} }
+      if(appel.mid){ await new Promise(r=>setTimeout(r,200)); const el=document.getElementById('mi-'+appel.mid); if(el)el.click(); }
       if(tasks.length){
         const lower=(appel.titre||'').toLowerCase();
         if(lower.includes('maintenan')||lower.includes('préven')) tasks[0].itype='Maintenance préventive';
         else if(lower.includes('répara')||lower.includes('repair')) tasks[0].itype='Réparation';
         else if(lower.includes('install')) tasks[0].itype='Installation';
         else if(lower.includes('diagnos')) tasks[0].itype='Diagnostic';
-        tasks[0].desc = appel.notes || appel.titre || '';
+        tasks[0].desc = appel.notes||appel.titre||'';
         renderTasks();
       }
-      // Report number
-      if(appelDate&&appelDate!=='0000-00-00'){
-        document.getElementById('f-rnum').value='SR-'+appelDate.replace(/-/g,'').slice(2);
-      }
+      if(appelDate&&appelDate!=='0000-00-00') document.getElementById('f-rnum').value='SR-'+appelDate.replace(/-/g,'').slice(2);
     }
-    localStorage.removeItem('bmak_prefill_appel');
-    localStorage.setItem('bmak_last_appel_id', prefillAppelId);
+  } else if(prefillCid) {
+    pickClient(prefillCid);
+    localStorage.removeItem('bmak_prefill_client');
   }
-  // Load draft if coming from historique
   const draftId = localStorage.getItem('bmak_draft_id');
-  if (draftId) {
-    localStorage.removeItem('bmak_draft_id');
-    await loadDraft(draftId);
-  }
+  if(draftId){ localStorage.removeItem('bmak_draft_id'); await loadDraft(draftId); }
 }
 init();
 </script>
@@ -828,7 +810,7 @@ if('serviceWorker' in navigator) {
 <script>
 // Force reload if db.js is cached old version
 setTimeout(function() {
-  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 15) {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 16) {
     console.warn('Old db.js detected, forcing reload...');
     window.location.reload(true);
   }
