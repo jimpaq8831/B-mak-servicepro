@@ -101,6 +101,10 @@ async function dbUpsert(table, row) {
     if (row.sigImg !== undefined) { row.sig_img = row.sigImg; delete row.sigImg; }
     if (row.savedAt !== undefined) { row.saved_at = row.savedAt; delete row.savedAt; }
   }
+  // Remove fields that don't exist in Supabase schema
+  if (table === 'appels') {
+    delete row.rapport_id; // Not in schema yet — remove to avoid 400
+  }
   // Update local cache immediately
   const local = LS.get(table) || [];
   const idx = local.findIndex(r => r.id === row.id);

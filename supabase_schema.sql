@@ -93,3 +93,7 @@ create policy "public_all" on machines for all using (true) with check (true);
 create policy "public_all" on techs    for all using (true) with check (true);
 create policy "public_all" on appels   for all using (true) with check (true);
 create policy "public_all" on rapports for all using (true) with check (true);
+
+-- Add rapport_id to appels (run if missing)
+ALTER TABLE appels ADD COLUMN IF NOT EXISTS rapport_id text;
+ALTER TABLE appels ADD COLUMN IF NOT EXISTS statut text DEFAULT 'Non-cédulé';

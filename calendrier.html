@@ -690,7 +690,7 @@ async function saveAppel(){
       heure, tech, notes, prio: newPrio,
       statut: newStatut,
       created_at: existing ? existing.created_at : new Date().toISOString()
-    });
+    }).catch ? undefined : undefined;
   }
   closeModal();
   renderCal(); renderAllAppels();
@@ -969,13 +969,12 @@ function renderKanban() {
         (a.tech?'<div class="kanban-card-tech">👷 '+a.tech+'</div>':'')+
         (m?'<div class="kanban-card-date">🔧 '+m.type+'</div>':'')+
         '</div>'+
-        '<div class="kanban-card-actions">'+
-          '<button class="kanban-action rapport-btn" data-id="'+a.id+'">📋</button>'+
-          '<button class="kanban-action edit-btn" data-id="'+a.id+'">✏️</button>'+
-          // Quick status change buttons
-          (col.key !== 'En attente' ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="En attente">⏳</button>' : '')+
-          (col.key !== 'En cours'   ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="En cours">▶️</button>' : '')+
-          (col.key !== 'Terminé'    ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="Terminé">✅</button>' : '')+
+        '<div class="kanban-card-actions" style="display:flex;gap:3px;flex-wrap:wrap;margin-top:6px">'+
+          '<button class="kanban-action rapport-btn" data-id="'+a.id+'" title="Créer rapport" style="padding:3px 6px;font-size:14px">📋</button>'+
+          '<button class="kanban-action edit-btn" data-id="'+a.id+'" title="Modifier" style="padding:3px 6px;font-size:14px">✏️</button>'+
+          (col.key !== 'En attente' ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="En attente" title="→ En attente" style="padding:2px 5px;font-size:11px;color:#b44f00">⏳</button>' : '')+
+          (col.key !== 'En cours'   ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="En cours" title="→ En cours" style="padding:2px 5px;font-size:11px;color:var(--teal)">▶</button>' : '')+
+          (col.key !== 'Terminé'    ? '<button class="kanban-action status-btn" data-id="'+a.id+'" data-status="Terminé" title="→ Terminé" style="padding:2px 5px;font-size:11px;color:#1a7a4a">✓</button>' : '')+
         '</div>'+
       '</div>';
     }).join('') : '<div class="kanban-empty">Aucun appel</div>';
@@ -1031,7 +1030,7 @@ async function confirmQuickDate() {
   const heure = document.getElementById('qd-heure').value;
   if (!date) { alert('Veuillez choisir une date.'); return; }
   document.getElementById('modal-quick-date').style.display = 'none';
-  await DB.saveAppel({..._qdAppel, statut: _qdStatus, date, dates: [date], heure});
+  const {rapport_id, ...qdClean} = {..._qdAppel}; await DB.saveAppel({...qdClean, statut: _qdStatus, date, dates: [date], heure});
   renderKanban();
   renderCal();
   renderAllAppels();
