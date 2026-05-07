@@ -312,25 +312,7 @@ if ('serviceWorker' in navigator) {
   </div>
 
   <!-- STEP 3: SIGNATURE -->
-  <div id="s3" style="display:none">
-    <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:4px">Signature client</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Faire signer le représentant</div>
-
-    <div class="field"><label class="lbl">Nom du signataire</label><input id="f-signer" type="text" placeholder="Nom du représentant client"></div>
-    <div class="field">
-      <label class="lbl">Signature *</label>
-      <canvas id="sig" class="sig-canvas" height="160"></canvas>
-      <div class="sig-row">
-        <button class="sig-clr" onclick="clearSig()">✕ Effacer</button>
-        <span id="sig-ok" style="font-size:13px;color:var(--teal);font-weight:600;display:none">✓ Signé</span>
-      </div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn btn-out" onclick="goStep(2)">←</button>
-      <button class="btn btn-primary" id="btn-s3">Réviser →</button>
-    </div>
-  </div>
+  
 
   <!-- STEP 4: RÉVISION -->
   <div id="s4" style="display:none">
@@ -351,7 +333,7 @@ if ('serviceWorker' in navigator) {
     <button class="btn btn-primary" id="btn-finish" onclick="finishRapport(this)" style="margin-bottom:10px">✅ Terminer le rapport</button>
     <button class="btn btn-out" id="btn-pdf" onclick="genPDFOnly()" style="margin-bottom:10px">📄 Générer le PDF seulement</button>
     <div class="btn-row" style="margin-top:4px">
-      <button class="btn btn-out" onclick="goStep(3)">← Retour</button>
+      <button class="btn btn-out" onclick="goStep(4)">← Retour</button>
     </div>
   </div>
 
@@ -386,12 +368,12 @@ function renderStepDots(n){
 function goStep(n){
   // Auto-save draft when navigating (not on final step 5)
   if (selClient && n > 1 && n < 5 && !savedSigImg) saveDraft();
-  [1,2,3,4,5].forEach(i=>{const el=document.getElementById('s'+i);if(el)el.style.display=i===n?'block':'none';});
+  [1,2,3,4].forEach(i=>{const el=document.getElementById('s'+i);if(el)el.style.display=i===n?'block':'none';});
   curStep=n;
   renderStepDots(n);
   document.getElementById('hdr-title').textContent=['','Client & Infos','Tâches','Signature','Révision',''][n]||'Rapport';
   window.scrollTo(0,0);
-  if(n===3){
+  if(n===999){// signature disabled
     initSig();
     // Restore saved signature if exists
     if(savedSigImg){
@@ -580,21 +562,11 @@ document.getElementById('btn-s2').addEventListener('click',function(){
   if(tasks.some(t=>!t.desc.trim())){alert('Chaque tâche doit avoir une description.');return;}
   D.tstart=document.getElementById('f-start').value;
   D.tend=document.getElementById('f-end').value;
-  goStep(3);
+  goStep(4);
 });
 document.getElementById('btn-s3').addEventListener('click',function(){
   D.signer=document.getElementById('f-signer').value.trim();
   if(sigDots<4){alert('Veuillez obtenir la signature du client.');return;}
-  // Save sig as JPEG on white bg (smaller + no alpha issues with jsPDF)
-(function(){
-  const c=document.getElementById('sig');
-  const tmp=document.createElement('canvas');
-  tmp.width=c.width;tmp.height=c.height;
-  const ctx=tmp.getContext('2d');
-  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,tmp.width,tmp.height);
-  ctx.drawImage(c,0,0);
-  savedSigImg=tmp.toDataURL('image/jpeg',0.85);
-})();
   goStep(4);
 });
 
@@ -650,13 +622,13 @@ async function finishRapport(btn){
   if(btn){btn.textContent='⏳ Génération...';btn.disabled=true;}
   // PDF generated separately via 'Générer PDF' button
   // Save to history
-  const rapport={id:uid(),cid:selClient.id,mid:selMachine?selMachine.id:null,tech:D.tech,date:D.date,rnum:D.rnum,dur:D.dur,tstart:D.tstart,tend:D.tend,taches:tasks.map(t=>({itype:t.itype,desc:t.desc,etat:t.etat,reco:t.reco,photos:t.photos})),signer:D.signer,sigImg:savedSigImg,savedAt:new Date().toISOString()};
+  const rapport={id:uid(),cid:selClient.id,mid:selMachine?selMachine.id:null,tech:D.tech,date:D.date,rnum:D.rnum,dur:D.dur,tstart:D.tstart,tend:D.tend,taches:tasks.map(t=>({itype:t.itype,desc:t.desc,etat:t.etat,reco:t.reco,photos:t.photos})),signer:D.signer,savedAt:new Date().toISOString()};
   // If this was a draft, give it the same ID to overwrite
   if (brouillonId) rapport.id = brouillonId;
   rapport.statut = 'final';
   await DB.saveRapport(rapport);
   const savedBrouillonId = brouillonId;
-  brouillonId = null; // Clear BEFORE goStep(5) to prevent re-save
+  brouillonId = null; // Clear BEFORE goStep(4) to prevent re-save
 
   // Auto-create a "Terminé" appel de service in the calendar
   // (only if not coming from an existing appel)
@@ -689,7 +661,7 @@ async function finishRapport(btn){
   }
 
   if(btn){btn.textContent='📄 Générer le rapport PDF';btn.disabled=false;}
-  goStep(5);
+  goStep(4);
 }
 
 

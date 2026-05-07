@@ -196,6 +196,16 @@ async function initDB() {
     await seedIfEmpty();
     // Load all tables into cache
     await Promise.all(['clients','machines','rapports','appels','techs'].map(t => dbGet(t)));
+    // Sync techs from localStorage to Supabase if Supabase has none
+    const sbTechs = LS.get('techs') || [];
+    if (sbTechs.length === 0) {
+      // Check if there were techs saved in old localStorage key
+      const oldTechs = JSON.parse(localStorage.getItem('bmak_techs') || '[]');
+      if (oldTechs.length > 0) {
+        for (const t of oldTechs) { await dbUpsert('techs', t); }
+        console.log('Migrated', oldTechs.length, 'techs to Supabase');
+      }
+    }
     syncPending();
   } else {
     // Offline: bootstrap from seed if cache is empty
