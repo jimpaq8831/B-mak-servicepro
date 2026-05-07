@@ -391,7 +391,19 @@ function goStep(n){
   renderStepDots(n);
   document.getElementById('hdr-title').textContent=['','Client & Infos','Tâches','Signature','Révision',''][n]||'Rapport';
   window.scrollTo(0,0);
-  if(n===3)initSig();
+  if(n===3){
+    initSig();
+    // Restore saved signature if exists
+    if(savedSigImg){
+      const img = new Image();
+      img.onload = function(){
+        sigCtx.clearRect(0,0,document.getElementById('sig').width,document.getElementById('sig').height);
+        sigCtx.drawImage(img,0,0,document.getElementById('sig').width,document.getElementById('sig').height);
+        sigDots=10;
+      };
+      img.src = savedSigImg;
+    }
+  }
   if(n===4)fillReview();
 }
 
