@@ -889,7 +889,22 @@ async function init() {
     localStorage.removeItem('bmak_prefill_client');
     pickClient(prefillCid);
   }
-}
+
+
+  // Open final rapport for editing from historique
+  const editId = localStorage.getItem('bmak_edit_rapport_id');
+  if(editId){
+    localStorage.removeItem('bmak_edit_rapport_id');
+    const rapport = DB.rapportsSync().find(r=>r.id===editId);
+    if(rapport){
+      brouillonId = rapport.id;
+      await applyDraft(rapport);
+      setTimeout(()=>{
+        const b = document.getElementById('btn-finish');
+        if(b) b.textContent = '💾 Sauvegarder les modifications';
+      }, 300);
+    }
+  }}
 
 function getItypeFromTitre(titre) {
   const l = (titre||'').toLowerCase();
@@ -946,21 +961,6 @@ async function applyDraft(draft) {
   }
 }
 
-  // Load final rapport for editing from historique
-  const editId = localStorage.getItem('bmak_edit_rapport_id');
-  if(editId){
-    localStorage.removeItem('bmak_edit_rapport_id');
-    await DB.rapports(); // ensure loaded
-    const rapport = DB.rapportsSync().find(r=>r.id===editId);
-    if(rapport){
-      brouillonId = rapport.id;
-      await applyDraft(rapport);
-      setTimeout(()=>{
-        const btn = document.getElementById('btn-finish');
-        if(btn) btn.textContent = '💾 Sauvegarder les modifications';
-      }, 200);
-    }
-  }
 }
 init();
 
@@ -974,7 +974,7 @@ if('serviceWorker' in navigator) {
 <script>
 // Force reload if db.js is cached old version
 setTimeout(function() {
-  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 24) {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 25) {
     console.warn('Old db.js detected, forcing reload...');
     window.location.reload(true);
   }

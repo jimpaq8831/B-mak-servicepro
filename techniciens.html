@@ -137,11 +137,7 @@ init();
 let curTech=null, editingId=null, curStatut='Actif';
 
 // Ensure techs exist in DB
-const DBT = {
-  techs: () => LS.get('techs') || [],
-  saveTechs: v => LS.set('techs', v),
-  techById: id => LS.get('techs') || [].find(t => t.id === id),
-};
+
 
 function techInitials(t) {
   return ((t.prenom||'')[0]||'').toUpperCase() + ((t.nom||'')[0]||'').toUpperCase();
@@ -470,7 +466,7 @@ if('serviceWorker' in navigator) {
 <script>
 // Force reload if db.js is cached old version
 setTimeout(function() {
-  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 24) {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 25) {
     console.warn('Old db.js detected, forcing reload...');
     window.location.reload(true);
   }
