@@ -646,8 +646,7 @@ function collectFormData() {
 async function finishRapport(btn){
   if(!btn) btn=document.getElementById('btn-finish');
   if(btn){btn.textContent='⏳ Génération...';btn.disabled=true;}
-  await new Promise(r=>setTimeout(r,80));
-  try{buildReportPDF({taches:tasks,signer:D.signer,rnum:D.rnum,dur:D.dur,date:D.date,tech:D.tech,cid:selClient.id,mid:selMachine?selMachine.id:null}, selClient, selMachine, savedSigImg);}catch(e){alert('Erreur PDF: '+e.message);}
+  // PDF generated separately via 'Générer PDF' button
   // Save to history
   const rapport={id:uid(),cid:selClient.id,mid:selMachine?selMachine.id:null,tech:D.tech,date:D.date,rnum:D.rnum,dur:D.dur,tstart:D.tstart,tend:D.tend,taches:tasks.map(t=>({itype:t.itype,desc:t.desc,etat:t.etat,reco:t.reco,photos:t.photos})),signer:D.signer,sigImg:savedSigImg,savedAt:new Date().toISOString()};
   // If this was a draft, give it the same ID to overwrite
@@ -811,7 +810,7 @@ function resetForm(){
 document.getElementById('f-date').value=document.getElementById('f-date').value||new Date().toISOString().split('T')[0];
 addTask();
 renderStepDots(1);
-n getItypeFromTitre(titre) {
+function getItypeFromTitre(titre) {
   const l = (titre||'').toLowerCase();
   if(l.includes('maintenan')||l.includes('préven')) return 'Maintenance préventive';
   if(l.includes('répara')||l.includes('repair')) return 'Réparation';
@@ -863,6 +862,27 @@ async function applyDraft(draft) {
       photos: Array.isArray(t.photos) ? t.photos : []
     }));
     renderTasks();
+  }
+
+  // 5. Restore signature if exists
+  const sigImg = draft.sigImg || draft.sig_img;
+  if (sigImg) {
+    savedSigImg = sigImg;
+    // Show the signature on the canvas
+    const canvas = document.getElementById('sig');
+    if (canvas) {
+      const img = new Image();
+      img.onload = function() {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        sigDots = 10; // mark as signed
+      };
+      img.src = sigImg;
+    }
+    // Show signer name
+    const signerField = draft.signer ? document.getElementById('f-signer') : null;
+    if (signerField && draft.signer) signerField.value = draft.signer;
   }
 }
 
