@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<title>B-Mak — Techniciens</title>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <meta name="theme-color" content="#022840">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="B-Mak ServicePro">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/seed.js"></script>
+  <script src="/db.js"></script>
+</head><body>
+<script>
+// Unregister old service workers and clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+</script>
+
+<script>
+// Unregister old service workers and clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+</script>
+<div id="sync-badge" style="display:none;position:fixed;top:58px;right:8px;z-index:99;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;transition:opacity .3s"></div>
+
+<div class="hdr">
+  <div class="hdr-logo">B-Mak</div>
+  <div class="hdr-title" id="hdr-title">Techniciens</div>
+  <button class="hdr-back" id="hdr-back" style="display:none" onclick="backToList()">← Retour</button>
+</div>
+
+<!-- LIST -->
+<div id="view-list">
+<div class="main">
+  <div class="field" style="margin-bottom:12px">
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input id="search" class="search-input" type="text" placeholder="Rechercher un technicien...">
+    </div>
+  </div>
+  <div id="tech-list"></div>
+</div>
+<button class="fab" onclick="showAdd()">+</button>
+</div>
+
+<!-- DETAIL -->
+<div id="view-detail" style="display:none">
+<div class="main">
+  <div id="tech-detail-card"></div>
+
+  <div class="sec">Contacter</div>
+  <div id="contact-actions"></div>
+
+  <div class="sec">Appels de service assignés</div>
+  <div id="tech-appels"></div>
+
+  <div class="btn-row" style="margin-top:16px">
+    <button class="btn btn-out" onclick="editTech()">✏️ Modifier</button>
+    <button class="btn btn-danger" onclick="deleteTech()" style="width:auto;padding:14px 16px">🗑️</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: Add/Edit Tech -->
+<div class="modal-bg" id="modal-tech" style="display:none">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+  <div class="modal-title" id="modal-title">Nouveau technicien</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="field"><label class="lbl">Prénom *</label><input id="t-prenom" type="text" placeholder="Jean"></div>
+    <div class="field"><label class="lbl">Nom *</label><input id="t-nom" type="text" placeholder="Tremblay"></div>
+  </div>
+  <div class="field"><label class="lbl">Titre / Poste</label><input id="t-titre" type="text" placeholder="Technicien senior, Mécanicien..."></div>
+  <div class="field"><label class="lbl">Téléphone cellulaire</label><input id="t-cell" type="tel" placeholder="(514) 555-1234"></div>
+  <div class="field"><label class="lbl">Courriel</label><input id="t-email" type="email" placeholder="jean@b-mak.com"></div>
+  <div class="field"><label class="lbl">Spécialité</label>
+    <select id="t-spec">
+      <option value="">— Sélectionner —</option>
+      <option>Ironworker / Geka</option>
+      <option>Drill Line / Peddinghaus</option>
+      <option>Plasma / Laser</option>
+      <option>Rebar / Pedax</option>
+      <option>Combilift / Chariot élévateur</option>
+      <option>Général / Multi-équipements</option>
+      <option>Électrique / Contrôles</option>
+    </select>
+  </div>
+  <div class="field"><label class="lbl">Notes</label><textarea id="t-notes" placeholder="Certifications, territoires couverts..."></textarea></div>
+  <div class="field"><label class="lbl">Statut</label>
+    <div class="pills" id="pills-statut">
+      <div class="pill active" data-v="Actif">✅ Actif</div>
+      <div class="pill" data-v="Inactif">⛔ Inactif</div>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="saveTech()">💾 Enregistrer</button>
+</div></div>
+
+<!-- MODAL: Envoyer invitation -->
+<div class="modal-bg" id="modal-invite" style="display:none">
+<div class="modal">
+  <button class="modal-close" onclick="document.getElementById('modal-invite').style.display='none'">✕</button>
+  <div class="modal-title">Envoyer une invitation</div>
+  <div id="invite-content"></div>
+</div></div>
+
+<nav class="nav">
+  <a href="/index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
+  <a href="/clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
+  <a href="/rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
+  <a href="/techniciens.html" class="nav-item active"><span class="nav-icon">👷</span>Techs</a>
+  <a href="/calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
+</nav>
+
+
+<script>
+async function init() {
+  await Promise.all([DB.techs(), DB.appels()]);
+  renderList();
+}
+initDB().then(() => { if (typeof init === 'function') init(); });
+let curTech=null, editingId=null, curStatut='Actif';
+
+// Ensure techs exist in DB
+const DBT = {
+  techs: () => LS.get('techs') || [],
+  saveTechs: v => LS.set('techs', v),
+  techById: id => LS.get('techs') || [].find(t => t.id === id),
+};
+
+function techInitials(t) {
+  return ((t.prenom||'')[0]||'').toUpperCase() + ((t.nom||'')[0]||'').toUpperCase();
+}
+
+function avatarColor(id) {
+  const colors = ['#025373','#025E73','#037F8C','#022840','#0a5e6e'];
+  let hash = 0;
+  for (let c of (id||'')) hash = (hash*31 + c.charCodeAt(0)) & 0xffff;
+  return colors[hash % colors.length];
+}
+
+function renderList(q='') {
+  const techs = LS.get('techs') || [];
+  const filtered = q ? techs.filter(t =>
+    (t.prenom+' '+t.nom).toLowerCase().includes(q.toLowerCase()) ||
+    (t.spec||'').toLowerCase().includes(q.toLowerCase())
+  ) : techs;
+
+  const el = document.getElementById('tech-list');
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-ico">👷</div><div class="empty-txt">Aucun technicien enregistré.<br>Appuyer sur + pour en ajouter un.</div></div>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(t => {
+    const appels = DB.appelsSync().filter(a => a.tech === t.prenom+' '+t.nom);
+    const statColor = t.statut === 'Actif' ? 'var(--teal)' : '#ff3b30';
+    return '<div class="card card-tap" data-id="'+t.id+'" style="display:flex;align-items:center;gap:12px">'+
+      '<div class="av" style="background:'+avatarColor(t.id)+'">'+techInitials(t)+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:15px;font-weight:700;color:var(--navy)">'+t.prenom+' '+t.nom+'</div>'+
+        '<div style="font-size:12px;color:var(--text3);margin-top:2px">'+(t.titre||'Technicien')+(t.spec?' · '+t.spec:'')+'</div>'+
+        '<div style="display:flex;gap:6px;margin-top:4px">'+
+          (t.cell?'<span style="font-size:11px;color:var(--text3)">📱 '+t.cell+'</span>':'')+
+          (appels.length?'<span style="font-size:11px;color:var(--teal)">· '+appels.length+' appel(s)</span>':'')+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+
+        '<span style="font-size:11px;color:'+statColor+';font-weight:600">'+t.statut+'</span>'+
+        '<span style="color:var(--text3);font-size:18px">›</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  el.querySelectorAll('.card-tap').forEach(el => {
+    el.addEventListener('click', function() { showDetail(this.dataset.id); });
+  });
+}
+
+function showDetail(id) {
+  curTech = DBT.techById(id);
+  if (!curTech) return;
+  document.getElementById('view-list').style.display = 'none';
+  document.getElementById('view-detail').style.display = 'block';
+  document.getElementById('hdr-title').textContent = curTech.prenom+' '+curTech.nom;
+  document.getElementById('hdr-back').style.display = 'block';
+
+  const t = curTech;
+  const statColor = t.statut === 'Actif' ? '#1a7a4a' : '#c0392b';
+  const statBg = t.statut === 'Actif' ? '#e6f9f0' : '#fff0ef';
+
+  document.getElementById('tech-detail-card').innerHTML =
+    '<div class="card" style="margin-bottom:10px">'+
+      '<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">'+
+        '<div class="av" style="width:56px;height:56px;font-size:20px;background:'+avatarColor(t.id)+'">'+techInitials(t)+'</div>'+
+        '<div>'+
+          '<div style="font-size:18px;font-weight:800;color:var(--navy)">'+t.prenom+' '+t.nom+'</div>'+
+          '<div style="font-size:13px;color:var(--text3);margin-top:2px">'+(t.titre||'Technicien')+'</div>'+
+          '<span class="badge" style="background:'+statBg+';color:'+statColor+';margin-top:4px;display:inline-block">'+t.statut+'</span>'+
+        '</div>'+
+      '</div>'+
+      (t.spec?row('🔧','Spécialité',t.spec):'')+
+      (t.cell?row('📱','Cellulaire',t.cell):'')+
+      (t.email?row('✉️','Courriel',t.email):'')+
+      (t.notes?row('📝','Notes',t.notes):'')+
+    '</div>';
+
+  // Contact actions
+  const actions = [];
+  if (t.cell) {
+    actions.push(
+      '<a href="tel:'+t.cell.replace(/\D/g,'')+'" style="text-decoration:none">'+
+        '<div class="card card-tap" style="display:flex;align-items:center;gap:12px;border-color:var(--teal)">'+
+          '<div style="font-size:24px">📞</div>'+
+          '<div><div style="font-size:14px;font-weight:700;color:var(--navy)">Appeler</div><div style="font-size:12px;color:var(--text3)">'+t.cell+'</div></div>'+
+        '</div></a>',
+      '<a href="sms:'+t.cell.replace(/\D/g,'')+'" style="text-decoration:none">'+
+        '<div class="card card-tap" style="display:flex;align-items:center;gap:12px;border-color:var(--teal)">'+
+          '<div style="font-size:24px">💬</div>'+
+          '<div><div style="font-size:14px;font-weight:700;color:var(--navy)">Texto</div><div style="font-size:12px;color:var(--text3)">'+t.cell+'</div></div>'+
+        '</div></a>'
+    );
+  }
+  if (t.email) {
+    actions.push(
+      '<a href="mailto:'+t.email+'" style="text-decoration:none">'+
+        '<div class="card card-tap" style="display:flex;align-items:center;gap:12px;border-color:var(--teal)">'+
+          '<div style="font-size:24px">✉️</div>'+
+          '<div><div style="font-size:14px;font-weight:700;color:var(--navy)">Courriel</div><div style="font-size:12px;color:var(--text3)">'+t.email+'</div></div>'+
+        '</div></a>'
+    );
+  }
+  actions.push(
+    '<div class="card card-tap" style="display:flex;align-items:center;gap:12px;border-color:var(--teal);cursor:pointer" onclick="showInviteModal(\''+t.id+'\')">'+
+      '<div style="font-size:24px">📅</div>'+
+      '<div><div style="font-size:14px;font-weight:700;color:var(--navy)">Envoyer une invitation d\'appel</div><div style="font-size:12px;color:var(--text3)">Choisir un appel à envoyer</div></div>'+
+    '</div>'
+  );
+
+  document.getElementById('contact-actions').innerHTML = actions.join('') ||
+    '<div style="font-size:13px;color:var(--text3);padding:8px 0">Aucune coordonnée enregistrée.</div>';
+
+  // Assigned appels
+  const nom = t.prenom+' '+t.nom;
+  const today = new Date().toISOString().split('T')[0];
+  const appels = DB.appelsSync().filter(a => a.tech === nom && a.date >= today)
+    .sort((a,b) => a.date.localeCompare(b.date));
+  const elA = document.getElementById('tech-appels');
+  if (!appels.length) {
+    elA.innerHTML = '<div style="font-size:13px;color:var(--text3);padding:8px 0">Aucun appel à venir assigné.</div>';
+  } else {
+    elA.innerHTML = appels.map(a => {
+      const c = DB.clientById(a.cid);
+      return '<div class="appel-card">'+
+        '<div class="appel-date">'+fmtDate(a.date)+' à '+a.heure+'</div>'+
+        '<div class="appel-title">'+(c?c.nom:'Client')+' — '+a.titre+'</div>'+
+        '<div style="display:flex;gap:8px;margin-top:6px">'+
+          (t.cell?'<a href="sms:'+t.cell.replace(/\D/g,'')+buildSMS(a,t)+'" class="badge badge-teal" style="text-decoration:none">💬 Texto</a>':'')+
+          (t.email?'<a href="'+buildMailto(a,t)+'" class="badge badge-teal" style="text-decoration:none">✉️ Email</a>':'')+
+          '<span onclick="exportOneICS(\''+a.id+'\',\''+t.id+'\')" class="badge badge-teal" style="cursor:pointer">📆 .ics Outlook</span>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  }
+}
+
+function row(ico, label, val) {
+  return '<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-top:1px solid var(--border)">'+
+    '<span style="font-size:15px;flex-shrink:0">'+ico+'</span>'+
+    '<span style="font-size:12px;color:var(--text3);width:70px;flex-shrink:0">'+label+'</span>'+
+    '<span style="font-size:13px;color:var(--navy);word-break:break-word">'+val+'</span>'+
+  '</div>';
+}
+
+function buildSMS(appel, tech) {
+  const c = DB.clientById(appel.cid);
+  const msg = encodeURIComponent(
+    'Bonjour '+tech.prenom+',\n\nTu as un appel de service B-Mak prévu :\n'+
+    '📅 '+fmtDate(appel.date)+' à '+appel.heure+'\n'+
+    '🏭 '+(c?c.nom+' — '+(c.adresse||''):'')+'\n'+
+    '🔧 '+appel.titre+'\n'+
+    (appel.notes?'Notes: '+appel.notes+'\n':'')+
+    '\nBonne journée!'
+  );
+  return '?body='+msg;
+}
+
+function buildMailto(appel, tech) {
+  const c = DB.clientById(appel.cid);
+  const m = appel.mid ? DB.machineById(appel.mid) : null;
+  const subj = encodeURIComponent('[B-Mak] Appel de service — '+fmtDate(appel.date)+' — '+(c?c.nom:''));
+  const body = encodeURIComponent(
+    'Bonjour '+tech.prenom+',\n\n'+
+    'Tu as un appel de service B-Mak prévu. Voici les détails :\n\n'+
+    '📅 Date : '+fmtDate(appel.date)+' à '+appel.heure+'\n'+
+    '🏭 Client : '+(c?c.nom:'')+'\n'+
+    (c&&c.adresse?'📍 Adresse : '+c.adresse+', '+c.ville+', '+c.province+'\n':'')+
+    (c&&c.tel?'📞 Tél. client : '+c.tel+'\n':'')+
+    (m?'🔧 Machine : '+m.type+' ('+m.marque+(m.serial?' · S/N: '+m.serial:'')+')'+'\n':'')+
+    '📋 Description : '+appel.titre+'\n'+
+    (appel.notes?'📝 Notes : '+appel.notes+'\n':'')+
+    (appel.prio==='Urgente'?'\n⚠️ PRIORITÉ URGENTE\n':'')+
+    '\nCordialement,\nB-Mak ServicePro'
+  );
+  return 'mailto:'+tech.email+'?subject='+subj+'&body='+body;
+}
+
+function showInviteModal(techId) {
+  const t = DBT.techById(techId);
+  if (!t) return;
+  const today = new Date().toISOString().split('T')[0];
+  const appels = DB.appelsSync().filter(a => a.date >= today).sort((a,b) => a.date.localeCompare(b.date)).slice(0,20);
+  let html = '<div style="font-size:13px;color:var(--text3);margin-bottom:12px">Sélectionner l\'appel à envoyer à <strong>'+t.prenom+' '+t.nom+'</strong></div>';
+  if (!appels.length) {
+    html += '<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun appel à venir dans le calendrier</div></div>';
+  } else {
+    html += appels.map(a => {
+      const c = DB.clientById(a.cid);
+      return '<div class="card" style="margin-bottom:8px">'+
+        '<div style="font-size:13px;font-weight:700;color:var(--navy)">'+fmtDate(a.date)+' à '+a.heure+' — '+(c?c.nom:'?')+'</div>'+
+        '<div style="font-size:12px;color:var(--text3);margin:4px 0">'+a.titre+'</div>'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
+          (t.cell?'<a href="sms:'+t.cell.replace(/\D/g,'')+buildSMS(a,t)+'" class="btn btn-out" style="width:auto;padding:8px 14px;font-size:13px;text-decoration:none">💬 Texto</a>':'')+
+          (t.email?'<a href="'+buildMailto(a,t)+'" class="btn btn-primary" style="width:auto;padding:8px 14px;font-size:13px;text-decoration:none">✉️ Email</a>':'')+
+          '<button class="btn btn-out" style="width:auto;padding:8px 14px;font-size:13px" onclick="exportOneICS(\''+a.id+'\',\''+t.id+'\')">📆 Outlook .ics</button>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  }
+  document.getElementById('invite-content').innerHTML = html;
+  document.getElementById('modal-invite').style.display = 'flex';
+}
+
+function exportOneICS(appelId, techId) {
+  const a = DB.appels().find(x => x.id === appelId);
+  const t = DBT.techById(techId);
+  if (!a) return;
+  const c = DB.clientById(a.cid);
+  const m = a.mid ? DB.machineById(a.mid) : null;
+  const d = a.date.replace(/-/g,'');
+  const h = (a.heure||'08:00').replace(':','');
+  const now = new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const hEnd = String(parseInt(h)+200).padStart(4,'0');
+  const ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//B-Mak ServicePro//FR\r\n'+
+    'BEGIN:VEVENT\r\nUID:'+a.id+'@bmak.app\r\nDTSTAMP:'+now+'\r\n'+
+    'DTSTART:'+d+'T'+h+'00\r\nDTEND:'+d+'T'+hEnd+'00\r\n'+
+    'SUMMARY:B-Mak — '+(c?c.nom:'')+' — '+a.titre+'\r\n'+
+    (t?'ATTENDEE;CN='+t.prenom+' '+t.nom+':MAILTO:'+(t.email||'noemail@bmak.ca')+'\r\n':'')+
+    (a.notes?'DESCRIPTION:'+a.notes+(m?'\\nMachine: '+m.type+' ('+m.marque+')':'')+'\\n\r\n':'')+
+    (c&&c.adresse?'LOCATION:'+c.adresse+', '+c.ville+'\r\n':'')+
+    'END:VEVENT\r\nEND:VCALENDAR';
+  const blob = new Blob([ics], {type:'text/calendar'});
+  const url = URL.createObjectURL(blob);
+  const lnk = document.createElement('a');
+  lnk.href = url; lnk.download = 'bmak_'+a.date+'_'+(c?c.nom.replace(/\s/g,'_'):'')+'.ics';
+  lnk.click(); URL.revokeObjectURL(url);
+}
+
+function backToList() {
+  document.getElementById('view-list').style.display = 'block';
+  document.getElementById('view-detail').style.display = 'none';
+  document.getElementById('hdr-title').textContent = 'Techniciens';
+  document.getElementById('hdr-back').style.display = 'none';
+  curTech = null;
+  renderList(document.getElementById('search').value);
+}
+
+function showAdd() {
+  editingId = null; curStatut = 'Actif';
+  ['t-prenom','t-nom','t-titre','t-cell','t-email','t-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('t-spec').value = '';
+  document.querySelectorAll('#pills-statut .pill').forEach(p => p.classList.remove('active'));
+  document.querySelector('#pills-statut .pill').classList.add('active');
+  document.getElementById('modal-title').textContent = 'Nouveau technicien';
+  document.getElementById('modal-tech').style.display = 'flex';
+}
+
+function editTech() {
+  const t = curTech;
+  editingId = t.id; curStatut = t.statut || 'Actif';
+  document.getElementById('t-prenom').value = t.prenom || '';
+  document.getElementById('t-nom').value = t.nom || '';
+  document.getElementById('t-titre').value = t.titre || '';
+  document.getElementById('t-cell').value = t.cell || '';
+  document.getElementById('t-email').value = t.email || '';
+  document.getElementById('t-spec').value = t.spec || '';
+  document.getElementById('t-notes').value = t.notes || '';
+  document.querySelectorAll('#pills-statut .pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.v === curStatut);
+  });
+  document.getElementById('modal-title').textContent = 'Modifier technicien';
+  document.getElementById('modal-tech').style.display = 'flex';
+}
+
+document.querySelectorAll('#pills-statut .pill').forEach(el => {
+  el.addEventListener('click', function() {
+    document.querySelectorAll('#pills-statut .pill').forEach(p => p.classList.remove('active'));
+    this.classList.add('active');
+    curStatut = this.dataset.v;
+  });
+});
+
+async function saveTech() {
+  const prenom = document.getElementById('t-prenom').value.trim();
+  const nom = document.getElementById('t-nom').value.trim();
+  if (!prenom || !nom) { alert('Prénom et nom requis.'); return; }
+  const techs = LS.get('techs') || [];
+  const data = {
+    prenom, nom,
+    titre: document.getElementById('t-titre').value.trim(),
+    cell: document.getElementById('t-cell').value.trim(),
+    email: document.getElementById('t-email').value.trim(),
+    spec: document.getElementById('t-spec').value,
+    notes: document.getElementById('t-notes').value.trim(),
+    statut: curStatut,
+  };
+  if (editingId) {
+    data.id = editingId;
+    const existing = DBT.techById(editingId)||{};
+    data.created_at = existing.created_at||new Date().toISOString();
+    await DB.saveTech(data);
+    closeModal();
+    curTech = DBT.techById(editingId);
+    showDetail(editingId);
+  } else {
+    data.id = uid();
+    data.created_at = new Date().toISOString();
+    await DB.saveTech(data);
+    closeModal();
+    renderList();
+  }
+}
+
+async function deleteTech() {
+  if (!confirm('Supprimer '+curTech.prenom+' '+curTech.nom+' ?')) return;
+  DBT.saveTechs(LS.get('techs') || [].filter(t => t.id !== curTech.id));
+  backToList();
+}
+
+function closeModal() { document.getElementById('modal-tech').style.display = 'none'; }
+
+document.getElementById('search').addEventListener('input', function() { renderList(this.value); });
+async function init() {
+  await Promise.all([DB.techs(), DB.appels()]);
+  renderList();
+}
+init();
+</script>
+
+<script>
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
+}
+</script>
+<script>
+// Force reload if db.js is cached old version
+setTimeout(function() {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 12) {
+    console.warn('Old db.js detected, forcing reload...');
+    window.location.reload(true);
+  }
+}, 500);
+</script>
+</body></html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<title>B-Mak ServicePro</title>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <meta name="theme-color" content="#022840">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="B-Mak ServicePro">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/seed.js"></script>
+  <script src="/db.js"></script>
+</head><body>
+<script>
+// Unregister old service workers and clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+</script>
+
+<script>
+// Unregister old service workers and clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+</script>
+<div id="sync-badge" style="display:none;position:fixed;top:58px;right:8px;z-index:99;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;transition:opacity .3s"></div>
+
+<div class="hdr">
+  <div class="hdr-logo">B-Mak</div>
+  <div class="hdr-title">Tableau de bord</div>
+</div>
+
+<div class="main">
+  <div class="stats" id="stats"></div>
+
+  <div class="sec">Prochains appels de service</div>
+  <div id="appels-today"></div>
+
+  <div class="sec">Derniers rapports</div>
+  <div id="rapports-recent"></div>
+
+  <div class="sec">Accès rapide</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <a href="/rapport.html" style="text-decoration:none">
+      <div class="card" style="text-align:center;padding:20px 10px;cursor:pointer">
+        <div style="font-size:30px;margin-bottom:6px">📋</div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy)">Nouveau rapport</div>
+      </div>
+    </a>
+    <a href="/calendrier.html" style="text-decoration:none">
+      <div class="card" style="text-align:center;padding:20px 10px;cursor:pointer">
+        <div style="font-size:30px;margin-bottom:6px">📅</div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy)">Calendrier</div>
+      </div>
+    </a>
+    <a href="/clients.html" style="text-decoration:none">
+      <div class="card" style="text-align:center;padding:20px 10px;cursor:pointer">
+        <div style="font-size:30px;margin-bottom:6px">🏭</div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy)">Clients</div>
+      </div>
+    </a>
+    <a href="/historique.html" style="text-decoration:none">
+      <div class="card" style="text-align:center;padding:20px 10px;cursor:pointer">
+        <div style="font-size:30px;margin-bottom:6px">📁</div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy)">Historique</div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<nav class="nav">
+  <a href="/index.html" class="nav-item active"><span class="nav-icon">🏠</span>Accueil</a>
+  <a href="/clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
+  <a href="/rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
+  <a href="/techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
+  <a href="/calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
+</nav>
+
+
+<script>
+// Bootstrap
+// Load from Supabase
+init();
+
+async function init() {
+  // Load directly from Supabase (not just cache)
+  const [clients, machines, rapports, appels] = await Promise.all([
+    DB.clients(), DB.machines(), DB.rapports(), DB.appels()
+  ]);
+  const today = new Date().toISOString().split('T')[0];
+
+  // Stats
+  document.getElementById('stats').innerHTML=[
+    {n:clients.length,l:'Clients'},
+    {n:machines.length,l:'Machines'},
+    {n:rapports.length,l:'Rapports'},
+    {n:appels.filter(a=>a.date>=today).length,l:'Appels à venir'}
+  ].map(s=>'<div class="stat"><div class="stat-n">'+s.n+'</div><div class="stat-l">'+s.l+'</div></div>').join('');
+
+  // Prochains appels (7 jours)
+  const week=new Date(Date.now()+7*864e5).toISOString().split('T')[0];
+  const prochains=appels.filter(a=>a.date>=today&&a.date<=week).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
+  const elA=document.getElementById('appels-today');
+  if(!prochains.length){elA.innerHTML='<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun appel cette semaine</div></div>';}
+  else{elA.innerHTML=prochains.map(a=>{
+    const c=DB.clientById(a.cid);
+    return '<div class="appel-card"><div class="appel-date">'+fmtDate(a.date)+' — '+a.heure+'</div><div class="appel-title">'+(c?c.nom:'Client inconnu')+'</div><div class="appel-sub">'+a.titre+'</div></div>';
+  }).join('');}
+
+  // Derniers rapports
+  const elR=document.getElementById('rapports-recent');
+  if(!rapports.length){elR.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-txt">Aucun rapport enregistré</div></div>';}
+  else{elR.innerHTML=rapports.slice(0,3).map(r=>{
+    const c=DB.clientById(r.cid);
+    const etat=r.taches&&r.taches[0]?r.taches[0].etat:'';
+    const s=statusSty(etat);
+    return '<div class="rapport-card" style="cursor:pointer" onclick="window.location.href=\"/historique.html\"">'+
+      '<div class="rapport-date">'+fmtDate(r.date)+' · '+r.tech+'</div>'+
+      '<div class="rapport-title">'+(c?c.nom:'—')+'</div>'+
+      '<div class="rapport-sub">'+(r.taches?r.taches.length+' tâche(s)':'')+(etat?' · <span style="color:'+s.color+'">'+etat+'</span>':'')+'</div>'+
+      '</div>';
+  }).join('');}
+}
+</script>
+
+<script>
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
+}
+</script>
+<script>
+// Force reload if db.js is cached old version
+setTimeout(function() {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 12) {
+    console.warn('Old db.js detected, forcing reload...');
+    window.location.reload(true);
+  }
+}, 500);
+</script>
+</body></html>

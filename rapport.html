@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<title>B-Mak — Rapport de service</title>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <meta name="theme-color" content="#022840">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="B-Mak ServicePro">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/seed.js"></script>
+  <script src="/db.js"></script>
+</head><body>
+<script>
+// Unregister old service workers and clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+</script>
+
+<script>
+// Unregister old service workers and clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+</script>
+<div id="sync-badge" style="display:none;position:fixed;top:58px;right:8px;z-index:99;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;transition:opacity .3s"></div>
+
+<div class="hdr">
+  <div class="hdr-logo">B-Mak</div>
+  <div class="hdr-title" id="hdr-title">Nouveau rapport</div>
+  <a href="/index.html" class="hdr-back">✕ Annuler</a>
+</div>
+
+<div class="main" id="form-main">
+  <!-- STEP INDICATORS -->
+  <div class="steps" id="steps"></div>
+
+  <!-- STEP 1: CLIENT + DATE -->
+  <div id="s1">
+    <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:4px">Client &amp; Infos générales</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Sélectionner le client, la machine et la date</div>
+
+    <div class="field">
+      <label class="lbl">Client *</label>
+      <div style="position:relative">
+        <div class="search-wrap" id="client-search-wrap">
+          <span class="search-ico">🔍</span>
+          <input id="client-input" class="search-input" type="text" placeholder="Tapez pour chercher..." autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+        <div class="drop" id="client-drop" style="display:none"></div>
+        <div id="client-card" style="display:none"></div>
+      </div>
+    </div>
+
+    <div class="field" id="machine-field" style="display:none">
+      <label class="lbl">Machine *</label>
+      <div id="machine-list"></div>
+    </div>
+
+    <div class="field">
+      <label class="lbl">Technicien *</label>
+      <select id="f-tech-sel" onchange="if(this.value){document.getElementById('f-tech').value=this.value;}">
+        <option value="">— Choisir un technicien —</option>
+      </select>
+      <input id="f-tech" type="text" placeholder="Ou entrer un nom..." style="margin-top:6px">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label class="lbl">Date *</label><input id="f-date" type="date"></div>
+      <div class="field"><label class="lbl">No. rapport</label><input id="f-rnum" type="text" placeholder="Auto"></div>
+    </div>
+
+    <div class="btn-row"><button class="btn btn-primary" id="btn-s1">Suivant →</button></div>
+  </div>
+
+  <!-- STEP 2: TÂCHES -->
+  <div id="s2" style="display:none">
+    <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:4px">Tâches effectuées</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Ajouter une ou plusieurs tâches</div>
+
+    <div id="tasks-container"></div>
+    <button class="btn btn-out" onclick="addTask()">+ Ajouter une tâche</button>
+
+    <div class="field" style="margin-top:16px">
+      <label class="lbl">Heures de travail</label>
+      <input type="hidden" id="f-start"><input type="hidden" id="f-end">
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px">
+        <div style="display:grid;grid-template-columns:1fr 1px 1fr;align-items:center">
+          <div style="text-align:center">
+            <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Début</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                <button type="button" class="time-arrow" onclick="changeTime('start','h',1)">▲</button>
+                <div class="time-block" id="disp-sh">08</div>
+                <button type="button" class="time-arrow" onclick="changeTime('start','h',-1)">▼</button>
+              </div>
+              <div style="font-size:22px;font-weight:700;color:var(--navy)">:</div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                <button type="button" class="time-arrow" onclick="changeTime('start','m',1)">▲</button>
+                <div class="time-block" id="disp-sm">00</div>
+                <button type="button" class="time-arrow" onclick="changeTime('start','m',-1)">▼</button>
+              </div>
+            </div>
+          </div>
+          <div style="width:1px;background:var(--border);height:60px;margin:0 4px"></div>
+          <div style="text-align:center">
+            <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Fin</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                <button type="button" class="time-arrow" onclick="changeTime('end','h',1)">▲</button>
+                <div class="time-block" id="disp-eh">17</div>
+                <button type="button" class="time-arrow" onclick="changeTime('end','h',-1)">▼</button>
+              </div>
+              <div style="font-size:22px;font-weight:700;color:var(--navy)">:</div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+                <button type="button" class="time-arrow" onclick="changeTime('end','m',1)">▲</button>
+                <div class="time-block" id="disp-em">00</div>
+                <button type="button" class="time-arrow" onclick="changeTime('end','m',-1)">▼</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          <span style="font-size:13px;color:var(--text3)">Durée totale : </span>
+          <strong id="f-dur" style="font-size:15px;color:var(--teal)">9h00</strong>
+        </div>
+      </div>
+    </div>
+      <div style="font-size:13px;color:var(--text3);margin-top:6px">Durée totale : <strong id="f-dur">—</strong></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-out" onclick="goStep(1)">←</button>
+      <button class="btn btn-primary" id="btn-s2">Suivant →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: SIGNATURE -->
+  <div id="s3" style="display:none">
+    <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:4px">Signature client</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Faire signer le représentant</div>
+
+    <div class="field"><label class="lbl">Nom du signataire</label><input id="f-signer" type="text" placeholder="Nom du représentant client"></div>
+    <div class="field">
+      <label class="lbl">Signature *</label>
+      <canvas id="sig" class="sig-canvas" height="160"></canvas>
+      <div class="sig-row">
+        <button class="sig-clr" onclick="clearSig()">✕ Effacer</button>
+        <span id="sig-ok" style="font-size:13px;color:var(--teal);font-weight:600;display:none">✓ Signé</span>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-out" onclick="goStep(2)">←</button>
+      <button class="btn btn-primary" id="btn-s3">Réviser →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: RÉVISION -->
+  <div id="s4" style="display:none">
+    <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:16px">Révision &amp; Rapport</div>
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Client · Machine</div>
+      <div id="rev-client" style="font-size:14px;color:var(--navy)"></div>
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Technicien · Date · Durée</div>
+      <div id="rev-tech" style="font-size:14px;color:var(--navy)"></div>
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Tâches</div>
+      <div id="rev-tasks" style="font-size:14px;color:var(--navy)"></div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-pdf" onclick="genPDF()">📄 Générer le rapport PDF</button>
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn btn-out" onclick="goStep(3)">← Retour</button>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="s5" style="display:none;text-align:center;padding:40px 0">
+    <div style="font-size:60px;margin-bottom:16px">✅</div>
+    <div style="font-size:22px;font-weight:800;color:var(--navy);margin-bottom:8px">Rapport enregistré !</div>
+    <div style="font-size:14px;color:var(--text3);line-height:1.6;margin-bottom:24px">Le PDF a été téléchargé et le rapport est sauvegardé dans l'historique.</div>
+    <button class="btn btn-primary" onclick="genPDF()" style="margin-bottom:10px">📄 Retélécharger le PDF</button>
+    <button class="btn btn-out" onclick="resetForm()">+ Nouveau rapport</button>
+    <button class="btn btn-out" style="margin-top:8px" onclick="location.href='/historique.html'">📁 Voir l'historique</button>
+  </div>
+</div>
+
+<nav class="nav">
+  <a href="/index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
+  <a href="/clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
+  <a href="/rapport.html" class="nav-item active"><span class="nav-icon">📋</span>Rapport</a>
+  <a href="/techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
+  <a href="/calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
+</nav>
+
+
+<script>
+if (typeof init === 'function') init();
+initDB().then(() => { if (typeof init === 'function') init(); });
+
+let curStep=1, selClient=null, selMachine=null, tasks=[], sigDots=0, sigCtx=null, savedSigImg=null;
+const D={tech:'',date:'',rnum:'',tstart:'',tend:'',dur:'',signer:''};
+
+// STEPS
+function renderStepDots(n){
+  document.getElementById('steps').innerHTML=[1,2,3,4].map(i=>'<div class="step-dot'+(i<=n?' done':'')+'"></div>').join('');
+}
+function goStep(n){
+  [1,2,3,4,5].forEach(i=>{const el=document.getElementById('s'+i);if(el)el.style.display=i===n?'block':'none';});
+  curStep=n;
+  renderStepDots(n);
+  document.getElementById('hdr-title').textContent=['','Client & Infos','Tâches','Signature','Révision',''][n]||'Rapport';
+  window.scrollTo(0,0);
+  if(n===3)initSig();
+  if(n===4)fillReview();
+}
+
+// AUTO TASK: start with one
+function addTask(){
+  const id='task_'+Date.now();
+  tasks.push({id,itype:'',desc:'',etat:'',reco:'',photos:[]});
+  renderTasks();
+}
+function removeTask(id){tasks=tasks.filter(t=>t.id!==id);renderTasks();}
+
+function renderTasks(){
+  const el=document.getElementById('tasks-container');
+  el.innerHTML=tasks.map((t,i)=>'<div class="task-block" id="'+t.id+'">'+
+    '<div class="task-header"><span class="task-num">Tâche '+(i+1)+'</span>'+(tasks.length>1?'<button class="task-del" onclick="removeTask(\''+t.id+'\')">🗑️</button>':'')+'</div>'+
+
+    '<div class="field"><label class="lbl">Type d\'intervention</label>'+
+    '<div class="pills" style="margin-bottom:0">'+
+    ['🔧 Maintenance préventive','⚙️ Réparation','📦 Installation','🔎 Diagnostic'].map(v=>{
+      const val=v.replace(/^.+ /,'');
+      return '<div class="pill task-pill'+(t.itype===val?' active':'')+'" data-tid="'+t.id+'" data-val="'+val+'">'+v+'</div>';
+    }).join('')+'</div></div>'+
+
+    '<div class="field"><label class="lbl">Description *</label>'+
+    '<textarea class="task-desc" data-tid="'+t.id+'" placeholder="Décrivez le travail effectué..." rows="3">'+t.desc+'</textarea></div>'+
+
+    '<div class="field"><label class="lbl">État de la machine</label>'+
+    '<div class="pills" style="margin-bottom:0">'+
+    [['✅ Bon état','Bon état','p-green'],['⚠️ Suivi requis','Suivi requis','p-orange'],['🔩 Pièces requises','Pièces requises','p-orange'],['🔴 Hors service','Hors service','p-red']].map(([lbl,val,cls])=>
+      '<div class="pill task-etat'+(t.etat===val?' active':'')+'" data-tid="'+t.id+'" data-val="'+val+'">'+lbl+'</div>'
+    ).join('')+'</div></div>'+
+
+    '<div class="field"><label class="lbl">Recommandations / Suivi</label>'+
+    '<textarea class="task-reco" data-tid="'+t.id+'" placeholder="Recommandations..." rows="2">'+t.reco+'</textarea></div>'+
+
+    '<div class="field"><label class="lbl">Photos ('+t.photos.length+')</label>'+
+    '<div class="photo-add" onclick="triggerPhoto(\''+t.id+'\')">📷 Appuyer pour prendre / choisir une photo</div>'+
+    '<input type="file" id="ph_'+t.id+'" accept="image/*" multiple capture="environment" style="display:none">'+
+    '<div class="photo-grid" id="pg_'+t.id+'">'+t.photos.map((src,pi)=>'<div class="photo-wrap"><img src="'+src+'"><button class="photo-del" onclick="delPhoto(\''+t.id+'\','+pi+')">✕</button></div>').join('')+'</div>'+
+    '</div>'+
+  '</div>').join('');
+
+  // Bind events after render
+  document.querySelectorAll('.task-pill').forEach(el=>{
+    el.addEventListener('click',function(){
+      const tid=this.dataset.tid;
+      document.querySelectorAll('.task-pill[data-tid="'+tid+'"]').forEach(p=>p.classList.remove('active'));
+      this.classList.add('active');
+      const t=tasks.find(t=>t.id===tid);if(t)t.itype=this.dataset.val;
+    });
+  });
+  document.querySelectorAll('.task-etat').forEach(el=>{
+    el.addEventListener('click',function(){
+      const tid=this.dataset.tid;
+      document.querySelectorAll('.task-etat[data-tid="'+tid+'"]').forEach(p=>p.classList.remove('active'));
+      this.classList.add('active');
+      const t=tasks.find(t=>t.id===tid);if(t)t.etat=this.dataset.val;
+    });
+  });
+  document.querySelectorAll('.task-desc').forEach(el=>{
+    el.addEventListener('change',function(){const t=tasks.find(t=>t.id===this.dataset.tid);if(t)t.desc=this.value;});
+  });
+  document.querySelectorAll('.task-reco').forEach(el=>{
+    el.addEventListener('change',function(){const t=tasks.find(t=>t.id===this.dataset.tid);if(t)t.reco=this.value;});
+  });
+  // Photo inputs
+  tasks.forEach(t=>{
+    const inp=document.getElementById('ph_'+t.id);
+    if(inp) inp.addEventListener('change',function(){
+      Array.from(this.files).forEach(file=>{
+        const r=new FileReader();
+        r.onload=e=>{t.photos.push(e.target.result);renderTasks();};
+        r.readAsDataURL(file);
+      });
+      this.value='';
+    });
+  });
+}
+function triggerPhoto(tid){document.getElementById('ph_'+tid).click();}
+function delPhoto(tid,pi){const t=tasks.find(t=>t.id===tid);if(t){t.photos.splice(pi,1);renderTasks();}}
+
+// CLIENT SEARCH
+const cInp=document.getElementById('client-input');
+const cDrop=document.getElementById('client-drop');
+cInp.addEventListener('input',function(){
+  const q=this.value.trim().toLowerCase();
+  if(!q){cDrop.style.display='none';return;}
+  const hits=DB.clientsSync().filter(c=>c.nom.toLowerCase().includes(q)||c.ville.toLowerCase().includes(q)||c.id.toLowerCase().includes(q)).slice(0,12);
+  cDrop.innerHTML=hits.length?hits.map(c=>'<div class="drop-item" data-id="'+c.id+'"><div class="drop-name">'+c.nom+'</div><div class="drop-sub">'+c.ville+', '+c.province+'</div></div>').join(''):'<div class="drop-empty">Aucun résultat</div>';
+  cDrop.style.display='block';
+  cDrop.querySelectorAll('.drop-item').forEach(el=>{
+    el.addEventListener('pointerdown',function(e){e.preventDefault();pickClient(this.dataset.id);});
+  });
+});
+cInp.addEventListener('blur',function(){setTimeout(()=>cDrop.style.display='none',150);});
+
+function pickClient(id){
+  selClient=DB.clientById(id);
+  cDrop.style.display='none';cInp.value='';
+  document.getElementById('client-search-wrap').style.display='none';
+  document.getElementById('client-card').innerHTML='<div class="card" style="padding:10px;display:flex;align-items:center;gap:10px;background:var(--teal-light);border-color:var(--teal)">'+
+    '<div class="av av-sm">'+initials(selClient.nom)+'</div>'+
+    '<div style="flex:1;font-size:14px;font-weight:600;color:var(--navy)">'+selClient.nom+'</div>'+
+    '<button onclick="changeClient()" style="background:none;border:none;color:var(--teal);font-size:13px;font-weight:600;cursor:pointer">Changer</button></div>';
+  document.getElementById('client-card').style.display='block';
+  loadMachines(id);
+}
+function changeClient(){selClient=null;selMachine=null;document.getElementById('client-search-wrap').style.display='block';document.getElementById('client-card').style.display='none';document.getElementById('machine-field').style.display='none';}
+function loadMachines(cid){
+  const ms=DB.machinesForClient(cid);
+  const el=document.getElementById('machine-list');
+  if(!ms.length){el.innerHTML='<div style="font-size:13px;color:var(--text3)">Aucune machine enregistrée pour ce client.</div>';document.getElementById('machine-field').style.display='block';return;}
+  el.innerHTML=ms.map(m=>'<div class="mach-item card-tap card" style="margin-bottom:6px;display:flex;align-items:center;gap:10px;padding:10px 12px" data-mid="'+m.id+'">'+
+    '<div style="width:20px;height:20px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;flex-shrink:0" class="mchk">✓</div>'+
+    '<div><div style="font-size:14px;font-weight:600;color:var(--navy)">'+m.type+'</div><div style="font-size:12px;color:var(--text3)">'+m.marque+(m.modele&&m.modele!=='-'?' · '+m.modele:'')+' · S/N: '+(m.serial||'—')+'</div></div></div>').join('');
+  document.getElementById('machine-field').style.display='block';
+  el.querySelectorAll('.mach-item').forEach(el=>{
+    el.addEventListener('click',function(){
+      document.querySelectorAll('.mach-item').forEach(x=>{x.style.background='';x.style.borderColor='';x.querySelector('.mchk').style.background='';x.querySelector('.mchk').style.borderColor='';x.querySelector('.mchk').style.color='transparent';});
+      this.style.background='var(--teal-light)';this.style.borderColor='var(--teal)';
+      const chk=this.querySelector('.mchk');chk.style.background='var(--teal)';chk.style.borderColor='var(--teal)';chk.style.color='#fff';
+      selMachine=DB.machineById(this.dataset.mid);
+    });
+  });
+}
+
+// TIME CALC
+// ── Time wheel state ──
+const TW={sh:8,sm:0,eh:17,em:0};
+function pad(n){return String(n).padStart(2,'0');}
+function twUpdate(){
+  document.getElementById('disp-sh').textContent=pad(TW.sh);
+  document.getElementById('disp-sm').textContent=pad(TW.sm);
+  document.getElementById('disp-eh').textContent=pad(TW.eh);
+  document.getElementById('disp-em').textContent=pad(TW.em);
+  document.getElementById('f-start').value=pad(TW.sh)+':'+pad(TW.sm);
+  document.getElementById('f-end').value=pad(TW.eh)+':'+pad(TW.em);
+  calcTime();
+}
+function changeTime(which,unit,delta){
+  if(which==='start'){
+    if(unit==='h'){TW.sh=(TW.sh+delta+24)%24;}
+    else{TW.sm=(TW.sm+delta*15+60)%60;}
+  } else {
+    if(unit==='h'){TW.eh=(TW.eh+delta+24)%24;}
+    else{TW.em=(TW.em+delta*15+60)%60;}
+  }
+  twUpdate();
+}
+function calcTime(){
+  const sm=TW.sh*60+TW.sm, em=TW.eh*60+TW.em;
+  let diff=em-sm; if(diff<0)diff+=1440;
+  const h=Math.floor(diff/60),m=diff%60;
+  D.dur=h+'h'+(m?pad(m):'');
+  document.getElementById('f-dur').textContent=h+'h'+(m?pad(m):'00');
+}
+twUpdate();
+
+// VALIDATION
+document.getElementById('btn-s1').addEventListener('click',function(){
+  if(!selClient){alert('Veuillez sélectionner un client.');return;}
+  D.tech=document.getElementById('f-tech').value.trim();
+  D.date=document.getElementById('f-date').value;
+  D.rnum=document.getElementById('f-rnum').value.trim()||'SR-'+Date.now().toString().slice(-6);
+  if(!D.tech){alert('Veuillez entrer votre nom.');return;}
+  if(!D.date){alert('Veuillez entrer la date.');return;}
+  goStep(2);
+});
+document.getElementById('btn-s2').addEventListener('click',function(){
+  // Collect current textarea values
+  document.querySelectorAll('.task-desc').forEach(el=>{const t=tasks.find(t=>t.id===el.dataset.tid);if(t)t.desc=el.value;});
+  document.querySelectorAll('.task-reco').forEach(el=>{const t=tasks.find(t=>t.id===el.dataset.tid);if(t)t.reco=el.value;});
+  if(!tasks.length){alert('Ajoutez au moins une tâche.');return;}
+  if(tasks.some(t=>!t.desc.trim())){alert('Chaque tâche doit avoir une description.');return;}
+  D.tstart=document.getElementById('f-start').value;
+  D.tend=document.getElementById('f-end').value;
+  goStep(3);
+});
+document.getElementById('btn-s3').addEventListener('click',function(){
+  D.signer=document.getElementById('f-signer').value.trim();
+  if(sigDots<4){alert('Veuillez obtenir la signature du client.');return;}
+  // Save sig as JPEG on white bg (smaller + no alpha issues with jsPDF)
+(function(){
+  const c=document.getElementById('sig');
+  const tmp=document.createElement('canvas');
+  tmp.width=c.width;tmp.height=c.height;
+  const ctx=tmp.getContext('2d');
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,tmp.width,tmp.height);
+  ctx.drawImage(c,0,0);
+  savedSigImg=tmp.toDataURL('image/jpeg',0.85);
+})();
+  goStep(4);
+});
+
+// SIGNATURE
+function initSig(){
+  const c=document.getElementById('sig');
+  c.width=c.offsetWidth;
+  sigCtx=c.getContext('2d');
+  sigCtx.strokeStyle='#022840';sigCtx.lineWidth=2.5;sigCtx.lineCap='round';sigCtx.lineJoin='round';
+  function pos(e){const r=c.getBoundingClientRect(),t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)};}
+  let drawing=false;
+  c.onmousedown=c.ontouchstart=function(e){e.preventDefault();drawing=true;const p=pos(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);};
+  c.onmousemove=c.ontouchmove=function(e){if(!drawing)return;e.preventDefault();const p=pos(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigDots++;if(sigDots>3)document.getElementById('sig-ok').style.display='inline';};
+  c.onmouseup=c.ontouchend=function(){drawing=false;};
+}
+function clearSig(){if(sigCtx)sigCtx.clearRect(0,0,sigCtx.canvas.width,sigCtx.canvas.height);sigDots=0;document.getElementById('sig-ok').style.display='none';}
+
+// REVIEW
+function fillReview(){
+  document.getElementById('rev-client').innerHTML='<strong>'+selClient.nom+'</strong> — '+selClient.ville+', '+selClient.province+(selMachine?'<br>Machine : '+selMachine.type+' · '+selMachine.marque+' · S/N: '+(selMachine.serial||'—'):'');
+  document.getElementById('rev-tech').textContent=D.tech+' · '+fmtDate(D.date)+(D.dur?' · '+D.dur:'');
+  document.getElementById('rev-tasks').innerHTML=tasks.map((t,i)=>'<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border)"><strong>Tâche '+(i+1)+'</strong>'+(t.itype?' — '+t.itype:'')+': '+t.desc.slice(0,80)+(t.desc.length>80?'…':'')+(t.etat?'<br><span style="color:'+statusSty(t.etat).color+'">'+t.etat+'</span>':'')+(t.photos.length?' · '+t.photos.length+' photo(s)':'')+'</div>').join('');
+}
+
+// PDF GENERATION
+async function genPDF(){
+  const btn=document.getElementById('btn-pdf');
+  if(btn){btn.textContent='⏳ Génération...';btn.disabled=true;}
+  await new Promise(r=>setTimeout(r,80));
+  try{buildReportPDF({taches:tasks,signer:D.signer,rnum:D.rnum,dur:D.dur,date:D.date,tech:D.tech,cid:selClient.id,mid:selMachine?selMachine.id:null}, selClient, selMachine, savedSigImg);}catch(e){alert('Erreur PDF: '+e.message);}
+  // Save to history
+  const rapport={id:uid(),cid:selClient.id,mid:selMachine?selMachine.id:null,tech:D.tech,date:D.date,rnum:D.rnum,dur:D.dur,tstart:D.tstart,tend:D.tend,taches:tasks.map(t=>({itype:t.itype,desc:t.desc,etat:t.etat,reco:t.reco,photos:t.photos})),signer:D.signer,sigImg:savedSigImg,savedAt:new Date().toISOString()};
+  await DB.saveRapport(rapport);
+
+  // Auto-create a "Terminé" appel de service in the calendar
+  // (only if not coming from an existing appel)
+  const prefillAppelId = localStorage.getItem('bmak_last_appel_id');
+  if (!prefillAppelId) {
+    // Create new appel linked to this rapport
+    await DB.saveAppel({
+      id: uid(),
+      cid: selClient.id,
+      mid: selMachine ? selMachine.id : null,
+      titre: tasks[0] ? (tasks[0].itype || 'Rapport de service') : 'Rapport de service',
+      date: D.date,
+      dates: [D.date],
+      heure: D.tstart || '08:00',
+      tech: D.tech,
+      notes: rapport.rnum,
+      prio: 'Normale',
+      statut: 'Terminé',
+      rapport_id: rapport.id,
+      created_at: new Date().toISOString()
+    });
+  } else {
+    // Update existing appel status to Terminé
+    const appels = DB.appelsSync();
+    const appel = appels.find(a => a.id === prefillAppelId);
+    if (appel) {
+      await DB.saveAppel({...appel, statut: 'Terminé', rapport_id: rapport.id});
+    }
+    localStorage.removeItem('bmak_last_appel_id');
+  }
+
+  if(btn){btn.textContent='📄 Générer le rapport PDF';btn.disabled=false;}
+  goStep(5);
+}
+
+
+
+function resetForm(){
+  selClient=null;selMachine=null;tasks=[];sigDots=0;savedSigImg=null;
+  Object.keys(D).forEach(k=>D[k]='');
+  localStorage.removeItem('bmak_last_appel_id');
+  document.getElementById('client-search-wrap').style.display='block';
+  document.getElementById('client-card').style.display='none';
+  document.getElementById('machine-field').style.display='none';
+  document.getElementById('client-input').value='';
+  document.getElementById('f-tech').value='';
+  document.getElementById('f-rnum').value='';
+  TW.sh=8;TW.sm=0;TW.eh=17;TW.em=0;twUpdate();
+  document.getElementById('f-dur').textContent='—';
+  document.getElementById('f-signer').value='';
+  addTask();goStep(1);
+}
+
+// Pre-fill from client page or calendar
+const prefillCid=localStorage.getItem('bmak_prefill_client');
+if(prefillCid){pickClient(prefillCid);localStorage.removeItem('bmak_prefill_client');}
+const prefillAppel=localStorage.getItem('bmak_prefill_appel');
+if(prefillAppel){
+  const appel=DB.appels().find(a=>a.id===prefillAppel);
+  if(appel){
+    // Date — use first date of series if multi-date
+    const appelDate=appel.dates&&appel.dates.length?appel.dates[0]:appel.date;
+    document.getElementById('f-date').value=appelDate;
+    // Heure → pre-fill time pickers
+    if(appel.heure){
+      document.getElementById('f-start').value=appel.heure;
+      // Set the fancy picker too
+      const [hh,mm]=appel.heure.split(':');
+      document.getElementById('sel-h').value=hh;
+      document.getElementById('sel-m').value=mm||'00';
+      calcTime();
+    }
+    // Technicien
+    if(appel.tech){
+      document.getElementById('f-tech').value=appel.tech;
+      const techSel=document.getElementById('f-tech-sel');
+      for(let i=0;i<techSel.options.length;i++){if(techSel.options[i].value===appel.tech){techSel.selectedIndex=i;break;}}
+    }
+    // Machine
+    if(appel.mid){
+      // loadMachines already called by pickClient — select the right machine after render
+      setTimeout(()=>{
+        const el=document.getElementById('mi-'+appel.mid);
+        if(el){el.click();}
+      },100);
+    }
+    // Notes → pre-fill first task description
+    if(appel.notes&&tasks.length){tasks[0].desc=appel.notes;renderTasks();}
+    // Titre → first task itype hint
+    if(appel.titre&&tasks.length){
+      const lower=appel.titre.toLowerCase();
+      if(lower.includes('maintenan')||lower.includes('préven')){tasks[0].itype='Maintenance préventive';}
+      else if(lower.includes('répara')||lower.includes('repair')){tasks[0].itype='Réparation';}
+      else if(lower.includes('install')){tasks[0].itype='Installation';}
+      else if(lower.includes('diagnos')){tasks[0].itype='Diagnostic';}
+      // Set task description to appel titre if no notes
+      if(!appel.notes){tasks[0].desc=appel.titre;}
+      renderTasks();
+    }
+    // Report number with appel date
+    if(!document.getElementById('f-rnum').value){
+      document.getElementById('f-rnum').value='SR-'+appelDate.replace(/-/g,'').slice(2);
+    }
+  }
+  localStorage.removeItem('bmak_prefill_appel');
+    localStorage.setItem('bmak_last_appel_id', prefillAppel);
+}
+
+document.getElementById('f-date').value=document.getElementById('f-date').value||new Date().toISOString().split('T')[0];
+addTask();
+renderStepDots(1);
+
+async function init() {
+  await Promise.all([DB.clients(), DB.machines(), DB.techs()]);
+  const techs = DB.techsSync();
+  const sel = document.getElementById('f-tech-sel');
+  if(sel && techs.length){
+    sel.innerHTML = '<option value="">— Choisir un technicien —</option>' +
+      techs.filter(t=>t.statut!=="Inactif").map(t=>'<option value="'+t.prenom+' '+t.nom+'">'+t.prenom+' '+t.nom+'</option>').join('');
+  }
+}
+init();
+</script>
+
+<script>
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
+}
+</script>
+<script>
+// Force reload if db.js is cached old version
+setTimeout(function() {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 12) {
+    console.warn('Old db.js detected, forcing reload...');
+    window.location.reload(true);
+  }
+}, 500);
+</script>
+</body></html>

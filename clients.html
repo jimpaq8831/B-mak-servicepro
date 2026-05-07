@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<title>B-Mak — Clients</title>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <meta name="theme-color" content="#022840">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="B-Mak ServicePro">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/seed.js"></script>
+  <script src="/db.js"></script>
+</head><body>
+<script>
+// Unregister old service workers and clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+</script>
+
+<script>
+// Unregister old service workers and clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+</script>
+<div id="sync-badge" style="display:none;position:fixed;top:58px;right:8px;z-index:99;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;transition:opacity .3s"></div>
+
+<div class="hdr">
+  <div class="hdr-logo">B-Mak</div>
+  <div class="hdr-title" id="hdr-title">Clients &amp; Machines</div>
+  <button class="hdr-back" id="hdr-back" style="display:none" onclick="backToList()">← Retour</button>
+</div>
+
+<!-- LIST VIEW -->
+<div id="view-list">
+<div class="main">
+  <div class="field" style="margin-bottom:12px">
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input id="search" class="search-input" type="text" placeholder="Rechercher un client...">
+    </div>
+  </div>
+  <div id="client-list"></div>
+</div>
+<button class="fab" onclick="showAddClient()">+</button>
+</div>
+
+<!-- DETAIL VIEW -->
+<div id="view-detail" style="display:none">
+<div class="main">
+  <div class="card" id="client-detail-card"></div>
+  <div class="sec">Machines</div>
+  <div id="machine-list"></div>
+  <button class="btn btn-out" style="margin-top:8px" onclick="showAddMachine()">+ Ajouter une machine</button>
+  <div class="btn-row" style="margin-top:12px">
+    <button class="btn btn-primary" onclick="newRapportFromClient()">📋 Nouveau rapport</button>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-out" onclick="editClient()">✏️ Modifier client</button>
+    <button class="btn btn-danger" onclick="deleteClient()" style="width:auto;padding:14px 16px">🗑️</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: Add/Edit Client -->
+<div class="modal-bg" id="modal-client" style="display:none">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-client')">✕</button>
+  <div class="modal-title" id="modal-client-title">Nouveau client</div>
+  <div class="field"><label class="lbl">Nom de l'entreprise *</label><input id="c-nom" type="text" placeholder="Acier AGF..."></div>
+  <div class="field"><label class="lbl">Adresse</label><input id="c-adresse" type="text" placeholder="123 Rue Industrielle"></div>
+  <div class="field"><label class="lbl">Ville</label><input id="c-ville" type="text" placeholder="Montréal"></div>
+  <div class="field"><label class="lbl">Province</label>
+    <select id="c-province"><option>QC</option><option>ON</option><option>BC</option><option>AB</option><option>MB</option><option>SK</option><option>NB</option><option>NS</option><option>PE</option><option>NL</option></select>
+  </div>
+  <div class="field"><label class="lbl">Téléphone</label><input id="c-tel" type="tel" placeholder="(514) 555-1234"></div>
+  <div class="field"><label class="lbl">Contact</label><input id="c-contact" type="text" placeholder="Jean Tremblay"></div>
+  <div class="field"><label class="lbl">Courriel</label><input id="c-email" type="email" placeholder="contact@entreprise.com"></div>
+  <button class="btn btn-primary" onclick="saveClient()">💾 Enregistrer</button>
+</div></div>
+
+<!-- MODAL: Add/Edit Machine -->
+<div class="modal-bg" id="modal-machine" style="display:none">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal('modal-machine')">✕</button>
+  <div class="modal-title" id="modal-machine-title">Nouvelle machine</div>
+  <div id="m-transfer-toggle" style="display:none;margin-bottom:12px">
+    <button onclick="toggleTransfer()" style="background:none;border:none;color:var(--teal);font-size:13px;font-weight:600;cursor:pointer;padding:0">
+      🔄 Changer de client propriétaire
+    </button>
+  </div>
+  <div class="field"><label class="lbl">Type de machine *</label><input id="m-type" type="text" placeholder="Ironworker, Drill Line..."></div>
+  <div class="field"><label class="lbl">Marque *</label><input id="m-marque" type="text" placeholder="Peddinghaus, Ficep..."></div>
+  <div class="field"><label class="lbl">Modèle</label><input id="m-modele" type="text" placeholder="PCD1100-3C"></div>
+  <div class="field"><label class="lbl">Numéro de série</label><input id="m-serial" type="text" placeholder="12345"></div>
+  <div class="field"><label class="lbl">Année</label><input id="m-annee" type="text" placeholder="2018"></div>
+  <div class="field"><label class="lbl">Notes</label><textarea id="m-notes" placeholder="Informations supplémentaires..."></textarea></div>
+  <div class="field" id="m-transfer-field" style="display:none">
+    <label class="lbl" style="color:var(--warn,#b44f00)">⚠️ Transférer à un autre client</label>
+    <div style="position:relative">
+      <div class="search-wrap" id="m-transfer-wrap">
+        <span class="search-ico">🔍</span>
+        <input id="m-transfer-input" class="search-input" type="text" placeholder="Rechercher le nouveau client..." autocomplete="off">
+      </div>
+      <div class="drop" id="m-transfer-drop" style="display:none"></div>
+      <div id="m-transfer-card" style="display:none"></div>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="saveMachine()">💾 Enregistrer</button>
+</div></div>
+
+<nav class="nav">
+  <a href="/index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
+  <a href="/clients.html" class="nav-item active"><span class="nav-icon">🏭</span>Clients</a>
+  <a href="/rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
+  <a href="/techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
+  <a href="/calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
+</nav>
+
+
+<script>
+async function init() { await renderList(); }
+init();
+let curClient=null, editingClientId=null, editingMachineId=null, transferToClientId=null;
+
+async function renderList(q=''){
+  const clients = await DB.clients();
+  const filtered=q?clients.filter(c=>c.nom.toLowerCase().includes(q.toLowerCase())||c.ville.toLowerCase().includes(q.toLowerCase())):clients;
+  const el=document.getElementById('client-list');
+  if(!filtered.length){el.innerHTML='<div class="empty"><div class="empty-ico">🏭</div><div class="empty-txt">Aucun client trouvé</div></div>';return;}
+  el.innerHTML=filtered.map(c=>{
+    const ms=DB.machinesForClient(c.id);
+    return '<div class="card card-tap" data-id="'+c.id+'" style="display:flex;align-items:center;gap:12px">'+
+      '<div class="av">'+initials(c.nom)+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:14px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.nom+'</div>'+
+        '<div style="font-size:12px;color:var(--text3);margin-top:2px">'+c.ville+', '+c.province+(ms.length?' · '+ms.length+' machine(s)':'')+'</div>'+
+      '</div>'+
+      '<span style="color:var(--text3);font-size:18px">›</span>'+
+    '</div>';
+  }).join('');
+  el.querySelectorAll('.card-tap').forEach(el=>{
+    el.addEventListener('click',function(){showDetail(this.dataset.id);});
+  });
+}
+
+function showDetail(id){
+  curClient=DB.clientById(id);
+  if(!curClient)return;
+  document.getElementById('view-list').style.display='none';
+  document.getElementById('view-detail').style.display='block';
+  document.getElementById('hdr-title').textContent=curClient.nom;
+  document.getElementById('hdr-back').style.display='block';
+  // Client info card
+  const c=curClient;
+  document.getElementById('client-detail-card').innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'+
+    '<div class="av" style="width:50px;height:50px;font-size:17px">'+initials(c.nom)+'</div>'+
+    '<div><div style="font-size:16px;font-weight:700;color:var(--navy)">'+c.nom+'</div>'+
+    '<div style="font-size:12px;color:var(--text3)">'+c.id+'</div></div></div>'+
+    (c.adresse?'<div style="font-size:13px;color:var(--text3);padding:6px 0;border-top:1px solid var(--border)">📍 '+c.adresse+', '+c.ville+', '+c.province+'</div>':'')+
+    (c.tel?'<div style="font-size:13px;color:var(--text3);padding:6px 0;border-top:1px solid var(--border)">📞 '+c.tel+'</div>':'')+
+    (c.contact?'<div style="font-size:13px;color:var(--text3);padding:6px 0;border-top:1px solid var(--border)">👤 '+c.contact+'</div>':'')+
+    (c.email?'<div style="font-size:13px;color:var(--text3);padding:6px 0;border-top:1px solid var(--border)">✉️ '+c.email+'</div>':'');
+  // Machines
+  renderMachines();
+}
+
+function renderMachines(){
+  const ms=DB.machinesForClient(curClient.id);
+  const el=document.getElementById('machine-list');
+  if(!ms.length){el.innerHTML='<div class="card" style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Aucune machine enregistrée</div>';return;}
+  el.innerHTML=ms.map(m=>'<div class="card" style="margin-bottom:8px">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between">'+
+    '<div style="font-size:14px;font-weight:700;color:var(--navy)">'+m.type+'</div>'+
+    '<div style="display:flex;gap:8px">'+
+    '<button onclick="editMachine(\''+m.id+'\')" style="background:none;border:none;cursor:pointer;color:var(--teal);font-size:14px">✏️</button>'+
+    '<button onclick="deleteMachine(\''+m.id+'\')" style="background:none;border:none;cursor:pointer;color:#ff3b30;font-size:14px">🗑️</button>'+
+    '</div></div>'+
+    '<div style="font-size:12px;color:var(--text3);margin-top:4px">'+m.marque+(m.modele&&m.modele!=='-'?' · '+m.modele:'')+' · S/N: '+(m.serial||'—')+(m.annee?' · '+m.annee:'')+'</div>'+
+    (m.notes?'<div style="font-size:12px;color:var(--text3);margin-top:4px;font-style:italic">'+m.notes+'</div>':'')+
+    '</div>').join('');
+}
+
+function backToList(){
+  document.getElementById('view-list').style.display='block';
+  document.getElementById('view-detail').style.display='none';
+  document.getElementById('hdr-title').textContent='Clients & Machines';
+  document.getElementById('hdr-back').style.display='none';
+  curClient=null;
+  renderList(document.getElementById('search').value);
+}
+
+function showAddClient(){editingClientId=null;['c-nom','c-adresse','c-ville','c-tel','c-contact','c-email'].forEach(id=>document.getElementById(id).value='');document.getElementById('modal-client-title').textContent='Nouveau client';document.getElementById('modal-client').style.display='flex';}
+function editClient(){
+  editingClientId=curClient.id;
+  document.getElementById('c-nom').value=curClient.nom||'';
+  document.getElementById('c-adresse').value=curClient.adresse||'';
+  document.getElementById('c-ville').value=curClient.ville||'';
+  document.getElementById('c-tel').value=curClient.tel||'';
+  document.getElementById('c-contact').value=curClient.contact||'';
+  document.getElementById('c-email').value=curClient.email||'';
+  document.getElementById('modal-client-title').textContent='Modifier client';
+  document.getElementById('modal-client').style.display='flex';
+}
+async function saveClient(){
+  const nom=document.getElementById('c-nom').value.trim();
+  if(!nom){alert('Le nom est requis.');return;}
+  const clients=DB.clientsSync();
+  const cData={nom,adresse:document.getElementById('c-adresse').value,ville:document.getElementById('c-ville').value,province:document.getElementById('c-province').value,tel:document.getElementById('c-tel').value,contact:document.getElementById('c-contact').value,email:document.getElementById('c-email').value,updated_at:new Date().toISOString()};
+  if(editingClientId){
+    cData.id=editingClientId;
+    await DB.saveClient(cData);
+    closeModal('modal-client');
+    curClient=DB.clientById(editingClientId);
+    showDetail(editingClientId);
+  } else {
+    cData.id='C'+String(clients.length+1).padStart(3,'0');
+    cData.created_at=new Date().toISOString();
+    await DB.saveClient(cData);
+    closeModal('modal-client');
+    renderList();
+  }
+}
+async function deleteClient(){
+  if(!confirm('Supprimer '+curClient.nom+' ?'))return;
+  await DB.delClient(curClient.id);
+  backToList();
+}
+function showAddMachine(){
+  editingMachineId=null; transferToClientId=null;
+  ['m-type','m-marque','m-modele','m-serial','m-annee','m-notes','m-transfer-input'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('modal-machine-title').textContent='Nouvelle machine';
+  document.getElementById('m-transfer-toggle').style.display='none';
+  document.getElementById('m-transfer-field').style.display='none';
+  document.getElementById('m-transfer-card').style.display='none';
+  document.getElementById('m-transfer-wrap').style.display='block';
+  document.getElementById('modal-machine').style.display='flex';
+}
+function editMachine(id){
+  const m=DB.machineById(id);if(!m)return;
+  editingMachineId=id; transferToClientId=null;
+  document.getElementById('m-type').value=m.type||'';
+  document.getElementById('m-marque').value=m.marque||'';
+  document.getElementById('m-modele').value=m.modele||'';
+  document.getElementById('m-serial').value=m.serial||'';
+  document.getElementById('m-annee').value=m.annee||'';
+  document.getElementById('m-notes').value=m.notes||'';
+  document.getElementById('modal-machine-title').textContent='Modifier machine';
+  document.getElementById('m-transfer-toggle').style.display='block';
+  document.getElementById('m-transfer-field').style.display='none';
+  document.getElementById('m-transfer-card').style.display='none';
+  document.getElementById('m-transfer-wrap').style.display='block';
+  document.getElementById('m-transfer-input').value='';
+  document.getElementById('modal-machine').style.display='flex';
+}
+async function saveMachine(){
+  const type=document.getElementById('m-type').value.trim(),marque=document.getElementById('m-marque').value.trim();
+  if(!type||!marque){alert('Type et marque requis.');return;}
+  const machines=DB.machines();
+  if(editingMachineId){
+    const i=machines.findIndex(m=>m.id===editingMachineId);
+    if(i>=0){
+      const newCid=transferToClientId||machines[i].cid;
+      machines[i]={...machines[i],type,marque,modele:document.getElementById('m-modele').value,serial:document.getElementById('m-serial').value,annee:document.getElementById('m-annee').value,notes:document.getElementById('m-notes').value,cid:newCid};
+      // If transferred to different client, go back to list (machine no longer belongs here)
+      if(transferToClientId&&transferToClientId!==curClient.id){
+        DB.saveMachines(machines);
+        closeModal('modal-machine');
+        const newOwner=DB.clientById(transferToClientId);
+        alert('Machine transférée à : '+(newOwner?newOwner.nom:'nouveau client'));
+        renderMachines();
+        return;
+      }
+    }
+  } else {
+    const newId='M'+String(machines.length+1).padStart(4,'0');
+    machines.push({id:newId,cid:curClient.id,type,marque,modele:document.getElementById('m-modele').value,serial:document.getElementById('m-serial').value,annee:document.getElementById('m-annee').value,notes:document.getElementById('m-notes').value});
+  }
+  DB.saveMachines(machines);
+  closeModal('modal-machine');
+  renderMachines();
+}
+async function deleteMachine(id){if(!confirm('Supprimer cette machine ?'))return;await DB.delMachine(id);renderMachines();}
+function closeModal(id){document.getElementById(id).style.display='none';}
+function newRapportFromClient(){localStorage.setItem('bmak_prefill_client',curClient.id);location.href='/rapport.html';}
+document.getElementById('search').addEventListener('input',function(){renderList(this.value);});
+
+async function init() {
+  renderList();
+}
+
+// ── Machine transfer search ──
+function toggleTransfer(){
+  const field=document.getElementById('m-transfer-field');
+  const isVisible=field.style.display!=='none';
+  field.style.display=isVisible?'none':'block';
+  if(!isVisible) document.getElementById('m-transfer-input').focus();
+  if(isVisible){transferToClientId=null;document.getElementById('m-transfer-card').style.display='none';document.getElementById('m-transfer-wrap').style.display='block';}
+}
+
+const trInp=document.getElementById('m-transfer-input');
+const trDrop=document.getElementById('m-transfer-drop');
+trInp.addEventListener('input',function(){
+  const q=this.value.trim().toLowerCase();
+  if(!q){trDrop.style.display='none';return;}
+  const hits=DB.clients().filter(c=>c.id!==curClient.id&&(c.nom.toLowerCase().includes(q)||c.ville.toLowerCase().includes(q))).slice(0,10);
+  trDrop.innerHTML=hits.length
+    ?hits.map(c=>'<div class="drop-item" data-id="'+c.id+'"><div class="drop-name">'+c.nom+'</div><div class="drop-sub">'+c.ville+', '+c.province+'</div></div>').join('')
+    :'<div class="drop-empty">Aucun résultat</div>';
+  trDrop.style.display='block';
+  trDrop.querySelectorAll('.drop-item').forEach(el=>{
+    el.addEventListener('pointerdown',function(e){
+      e.preventDefault();
+      transferToClientId=this.dataset.id;
+      const c=DB.clientById(transferToClientId);
+      trDrop.style.display='none';
+      trInp.value='';
+      document.getElementById('m-transfer-wrap').style.display='none';
+      document.getElementById('m-transfer-card').innerHTML=
+        '<div style="background:var(--teal-light);border:1.5px solid var(--teal);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-top:6px">'+
+        '<div style="font-size:20px">🏭</div>'+
+        '<div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--navy)">'+c.nom+'</div>'+
+        '<div style="font-size:12px;color:var(--text3)">'+c.ville+', '+c.province+'</div></div>'+
+        '<button onclick="cancelTransfer()" style="background:none;border:none;color:var(--teal);font-size:13px;font-weight:600;cursor:pointer">Changer</button>'+
+        '</div>';
+      document.getElementById('m-transfer-card').style.display='block';
+    });
+  });
+});
+trInp.addEventListener('blur',function(){setTimeout(()=>trDrop.style.display='none',150);});
+function cancelTransfer(){transferToClientId=null;document.getElementById('m-transfer-wrap').style.display='block';document.getElementById('m-transfer-card').style.display='none';trInp.value='';}
+</script>
+
+<script>
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
+}
+</script>
+<script>
+// Force reload if db.js is cached old version
+setTimeout(function() {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 12) {
+    console.warn('Old db.js detected, forcing reload...');
+    window.location.reload(true);
+  }
+}, 500);
+</script>
+</body></html>

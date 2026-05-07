@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<title>B-Mak — Calendrier</title>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <meta name="theme-color" content="#022840">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="B-Mak ServicePro">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/seed.js"></script>
+  <script src="/db.js"></script>
+<style>
+.date-picker-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:6px}
+.dp-hdr{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:3px 0}
+.dp-day{min-height:36px;background:#fff;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;cursor:pointer;transition:all .12s;color:var(--navy)}
+.dp-day:active{opacity:.7}
+.dp-day.other{color:#c8c8c8;background:#fafafa}
+.dp-day.today{border-color:var(--teal);color:var(--teal);font-weight:700}
+.dp-day.selected{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:700}
+.dp-day.past{opacity:.35;cursor:default;pointer-events:none}
+.dp-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.dp-nav-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--navy);padding:4px 10px}
+.dp-month-label{font-size:14px;font-weight:700;color:var(--navy)}
+.date-chip{background:var(--teal-light);border:1px solid var(--teal);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;color:var(--petrol);display:inline-flex;align-items:center;gap:6px;margin:3px}
+.date-chip button{background:none;border:none;color:var(--petrol);cursor:pointer;font-size:14px;padding:0;line-height:1}
+.recur-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.recur-pill{background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:500;color:var(--text3);transition:all .12s}
+.recur-pill.active{border-color:var(--teal);background:var(--teal-light);color:var(--petrol)}
+.send-section{background:var(--teal-light);border:1.5px solid var(--teal);border-radius:10px;padding:14px;margin-top:14px}
+.send-title{font-size:13px;font-weight:700;color:var(--petrol);margin-bottom:10px}
+.send-btn{display:flex;align-items:center;gap:10px;padding:11px 14px;background:#fff;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;text-decoration:none;font-family:inherit;width:100%;margin-bottom:8px;transition:border-color .15s}
+.send-btn:active{background:var(--teal-light)}
+.send-btn-ico{font-size:20px;flex-shrink:0}
+.send-btn-label{font-size:13px;font-weight:600;color:var(--navy)}
+.send-btn-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:8px}
+.cal-day-hdr{text-align:center;font-size:11px;font-weight:700;color:var(--text3);padding:4px 0}
+.cal-day{min-height:40px;background:#fff;border-radius:6px;padding:4px;cursor:pointer;border:1px solid transparent;position:relative}
+.cal-day:active{background:var(--teal-light)}
+.cal-day.today{border-color:var(--teal)}
+.cal-day.other-month .cal-dn{color:#c0c0c0}
+.cal-dn{font-size:13px;font-weight:500;text-align:center}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-nav-btn{background:none;border:none;font-size:22px;cursor:pointer;color:var(--navy);padding:6px 10px}
+.cal-month{font-size:16px;font-weight:700;color:var(--navy)}
+.dot-row{display:flex;gap:2px;justify-content:center;margin-top:2px}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--teal);flex-shrink:0}
+.dot.urgent{background:#ff3b30}
+.appel-card{background:#fff;border-left:4px solid var(--teal);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);border-left-width:4px}
+.appel-date{font-size:12px;font-weight:700;color:var(--teal);margin-bottom:4px}
+.appel-title{font-size:14px;font-weight:600;color:var(--navy)}
+.appel-sub{font-size:12px;color:var(--text3);margin-top:2px}
+
+/* Statut badges */
+.statut-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.statut-pill{border:1.5px solid var(--border);border-radius:8px;padding:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:600;color:var(--text3);background:#fff;transition:all .12s}
+.statut-pill.s-gray{border-color:#8e8e93;background:#f2f2f7;color:#3c3c43}
+.statut-pill.s-orange{border-color:#ff9500;background:#fff8ee;color:#b44f00}
+.statut-pill.s-blue{border-color:var(--teal);background:var(--teal-light);color:var(--petrol)}
+.statut-pill.s-green{border-color:#34c759;background:#e6f9f0;color:#1a7a4a}
+</style>
+</head><body>
+<script>
+// Unregister old service workers and clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+</script>
+
+<script>
+// Unregister old service workers and clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+</script>
+<div id="sync-badge" style="display:none;position:fixed;top:58px;right:8px;z-index:99;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;transition:opacity .3s"></div>
+
+<div class="hdr">
+  <div class="hdr-logo">B-Mak</div>
+  <div class="hdr-title">Calendrier</div>
+</div>
+
+<div class="main">
+  <div class="card" style="padding:12px">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="prevMonth()">‹</button>
+      <div class="cal-month" id="cal-month"></div>
+      <button class="cal-nav-btn" onclick="nextMonth()">›</button>
+    </div>
+    <div class="cal-grid" id="cal-headers"></div>
+    <div class="cal-grid" id="cal-days"></div>
+  </div>
+
+  <div id="day-section" style="display:none">
+    <div class="sec" id="day-title"></div>
+    <div id="day-events"></div>
+    <button class="btn btn-primary" style="margin-top:8px" onclick="showAddAppel()">+ Ajouter un appel de service</button>
+  </div>
+
+  <div class="sec">Tous les appels à venir</div>
+  <div id="all-appels"></div>
+</div>
+
+<button class="fab" onclick="showAddAppel()">+</button>
+
+<!-- ══════════════════════════════════════
+     MODAL: Créer un appel de service
+     ══════════════════════════════════════ -->
+<div class="modal-bg" id="modal-appel" style="display:none">
+<div class="modal">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+  <div class="modal-title">Nouvel appel de service</div>
+
+  <!-- CLIENT -->
+  <div class="field">
+    <label class="lbl">Client *</label>
+    <div style="position:relative">
+      <div class="search-wrap" id="appel-search-wrap">
+        <span class="search-ico">🔍</span>
+        <input id="appel-client-input" class="search-input" type="text" placeholder="Rechercher un client..." autocomplete="off">
+      </div>
+      <div class="drop" id="appel-drop" style="display:none"></div>
+      <div id="appel-client-card" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- MACHINE -->
+  <div class="field" id="appel-machine-field" style="display:none">
+    <label class="lbl">Machine</label>
+    <select id="appel-machine"></select>
+  </div>
+
+  <!-- TITRE -->
+  <div class="field">
+    <label class="lbl">Titre / Description *</label>
+    <input id="appel-titre" type="text" placeholder="Maintenance préventive annuelle...">
+  </div>
+
+  <!-- HEURE + PRIORITÉ -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="field">
+      <label class="lbl">Heure</label>
+      <input id="appel-heure" type="time" value="08:00">
+    </div>
+    <div class="field">
+      <label class="lbl">Priorité</label>
+      <div class="pills" id="pills-prio" style="grid-template-columns:1fr 1fr">
+        <div class="pill active" data-v="Normale">🟢 Normale</div>
+        <div class="pill" data-v="Urgente">🔴 Urgente</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DATES MULTIPLES ══ -->
+  <div class="field">
+    <label class="lbl" style="margin-bottom:8px">
+      Dates *
+      <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);font-size:11px;margin-left:4px">— Sélectionner une ou plusieurs dates sur le calendrier</span>
+    </label>
+
+    <!-- Mini recurrence shortcuts -->
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Récurrence rapide</div>
+      <div class="recur-grid">
+        <div class="recur-pill" data-r="none" onclick="setRecur(this,'none')">📅 Aucune</div>
+        <div class="recur-pill" data-r="weekly" onclick="setRecur(this,'weekly')">🔄 Hebdomadaire</div>
+        <div class="recur-pill" data-r="monthly" onclick="setRecur(this,'monthly')">📆 Mensuel</div>
+        <div class="recur-pill" data-r="quarterly" onclick="setRecur(this,'quarterly')">📋 Trimestriel</div>
+        <div class="recur-pill" data-r="biannual" onclick="setRecur(this,'biannual')">🛠️ Semestriel</div>
+        <div class="recur-pill" data-r="annual" onclick="setRecur(this,'annual')">📌 Annuel</div>
+      </div>
+      <div id="recur-from-wrap" style="display:none;margin-top:8px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">À partir de quelle date ?</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center">
+          <input type="date" id="recur-from" style="font-size:13px;padding:8px 10px">
+          <div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Nombre d'occurrences</div>
+            <select id="recur-count" style="font-size:13px;padding:8px 10px">
+              <option value="3">3×</option><option value="4">4×</option><option value="6">6×</option>
+              <option value="8">8×</option><option value="12">12×</option><option value="24">24×</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-out" style="margin-top:8px;padding:9px" onclick="applyRecur()">↺ Générer les dates</button>
+      </div>
+    </div>
+
+    <!-- Date picker calendar -->
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px">
+      <div class="dp-nav">
+        <button class="dp-nav-btn" onclick="dpPrev()">‹</button>
+        <span class="dp-month-label" id="dp-month"></span>
+        <button class="dp-nav-btn" onclick="dpNext()">›</button>
+      </div>
+      <div class="date-picker-grid" id="dp-headers"></div>
+      <div class="date-picker-grid" id="dp-days"></div>
+    </div>
+
+    <!-- Selected dates chips -->
+    <div id="date-chips" style="margin-top:8px"></div>
+  </div>
+
+  <!-- STATUT -->
+  <div class="field">
+    <label class="lbl">Statut de l'appel</label>
+    <div class="statut-grid" id="pills-statut">
+      <div class="statut-pill s-gray" data-v="Non-cédulé" onclick="setStatut(this)">⬜ Non-cédulé</div>
+      <div class="statut-pill" data-v="En attente" onclick="setStatut(this)">🟡 En attente</div>
+      <div class="statut-pill" data-v="En cours" onclick="setStatut(this)">🔵 En cours</div>
+      <div class="statut-pill" data-v="Terminé" onclick="setStatut(this)">✅ Terminé</div>
+    </div>
+  </div>
+
+  <!-- TECHNICIEN -->
+  <div class="field">
+    <label class="lbl">Technicien assigné</label>
+    <select id="appel-tech">
+      <option value="">— Non assigné —</option>
+    </select>
+  </div>
+
+  <!-- NOTES -->
+  <div class="field">
+    <label class="lbl">Notes</label>
+    <textarea id="appel-notes" placeholder="Informations supplémentaires..." rows="2"></textarea>
+  </div>
+
+  <!-- ══ SECTION ENVOI IMMÉDIAT ══ -->
+  <div class="send-section" id="send-section" style="display:none">
+    <div class="send-title">📤 Envoyer l'invitation au technicien</div>
+    <div class="send-btns" id="send-btns"></div>
+  </div>
+
+  <div id="create-rapport-section" style="display:none;background:var(--teal-light);border:1.5px solid var(--teal);border-radius:10px;padding:12px;margin-top:14px">
+    <div style="font-size:13px;font-weight:700;color:var(--petrol);margin-bottom:8px">📋 Appel terminé — créer le rapport ?</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="font-size:13px;padding:10px" onclick="saveAndCreateRapport()">📋 Enregistrer + ouvrir rapport</button>
+      <button class="btn btn-out" style="font-size:13px;padding:10px;width:auto" onclick="saveAppel()">💾 Juste enregistrer</button>
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btn-save-appel" style="margin-top:14px" onclick="saveAppel()">💾 Enregistrer l'appel</button>
+</div></div>
+
+<nav class="nav">
+  <a href="/index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
+  <a href="/clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
+  <a href="/rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
+  <a href="/techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
+  <a href="/calendrier.html" class="nav-item active"><span class="nav-icon">📅</span>Agenda</a>
+</nav>
+
+
+<script>
+// ── Main calendar state ──
+let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
+let selDate=null, selClient=null, newPrio='Normale', newStatut='Non-cédulé', editingAppelId=null;
+
+// ── Date picker state ──
+let dpYear=new Date().getFullYear(), dpMonth=new Date().getMonth();
+let selectedDates=[];  // array of 'YYYY-MM-DD' strings
+
+// ── Recurrence state ──
+let curRecur='none';
+
+const MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const DAYS=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const today=new Date().toISOString().split('T')[0];
+
+// ════════════════════════════
+//  MAIN CALENDAR
+// ════════════════════════════
+function renderCal(){
+  document.getElementById('cal-month').textContent=MONTHS[calMonth]+' '+calYear;
+  document.getElementById('cal-headers').innerHTML=DAYS.map(d=>'<div class="cal-day-hdr">'+d+'</div>').join('');
+  const first=new Date(calYear,calMonth,1).getDay();
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  const prevDays=new Date(calYear,calMonth,0).getDate();
+  const appels=DB.appelsSync();
+  let total=first+days; if(total%7!==0)total+=7-(total%7);
+  let html='';
+  for(let i=0;i<total;i++){
+    let d,m=calMonth,y=calYear,other=false;
+    if(i<first){d=prevDays-(first-1-i);m=calMonth-1;if(m<0){m=11;y--;}other=true;}
+    else if(i>=first+days){d=i-first-days+1;m=calMonth+1;if(m>11){m=0;y++;}other=true;}
+    else d=i-first+1;
+    const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const evs=appels.filter(a=>a.date===ds);
+    const isSel=ds===selDate;
+    const isToday=ds===today;
+    const urgentCount=evs.filter(a=>a.prio==='Urgente').length;
+    let dots='';
+    if(evs.length) dots='<div class="dot-row">'+evs.slice(0,3).map(a=>'<div class="dot'+(a.prio==='Urgente'?' urgent':'')+'"></div>').join('')+'</div>';
+    html+='<div class="cal-day'+(other?' other-month':'')+(isToday?' today':'')+(isSel?' selected':'')+(isSel?' " style="background:var(--teal-light);border-color:var(--teal);"':'"')+' data-date="'+ds+'">'+
+      '<div class="cal-dn" style="'+(isSel?'color:var(--petrol);font-weight:700':'')+'">'+(evs.length>0?'<strong>'+d+'</strong>':d)+'</div>'+dots+'</div>';
+  }
+  document.getElementById('cal-days').innerHTML=html;
+  document.querySelectorAll('.cal-day').forEach(el=>{el.addEventListener('click',function(){selectDay(this.dataset.date);});});
+}
+
+function selectDay(date){
+  selDate=date; renderCal();
+  const evs=DB.appelsSync().filter(a=>a.date===date&&a.date!=='0000-00-00').sort((a,b)=>a.heure.localeCompare(b.heure));
+  document.getElementById('day-section').style.display='block';
+  document.getElementById('day-title').textContent=fmtDate(date)+(evs.length?' — '+evs.length+' appel(s)':'');
+  renderDayEvents(evs);
+}
+
+function attachCardEvents(container){
+  container.querySelectorAll('.rapport-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();startRapport(this.dataset.id);}));
+  container.querySelectorAll('.edit-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();editAppel(this.dataset.id);}));
+  container.querySelectorAll('.del-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();deleteAppel(this.dataset.id);}));
+  container.querySelectorAll('.ics-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();doExportICS(this.dataset.id);}));
+}
+
+function renderDayEvents(evs){
+  const el=document.getElementById('day-events');
+  if(!evs.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">Aucun appel ce jour</div>';return;}
+  el.innerHTML=evs.map(a=>appelCardHTML(a)).join('');
+  attachCardEvents(el);
+}
+
+function appelCardHTML(a){
+  const c=DB.clientById(a.cid);
+  const t=a.tech?(LS.get('techs')||[]).find(x=>x.prenom+' '+x.nom===a.tech):null;
+  const pColor=a.prio==='Urgente'?'#ff3b30':'var(--teal)';
+  const statut=a.statut||'Non-cédulé';
+  const sColors={'Non-cédulé':'#8e8e93','En attente':'#ff9500','En cours':'#037F8C','Terminé':'#34c759'};
+  const sBg={'Non-cédulé':'#f2f2f7','En attente':'#fff8ee','En cours':'#e6f4f5','Terminé':'#e6f9f0'};
+  const datesLabel=a.dates&&a.dates.length>1?'<div style="font-size:11px;color:#6c7a89;margin-top:2px">📅 Série de '+a.dates.length+' visites</div>':'';
+  const smsLink=t&&t.cell?'<a href="sms:'+t.cell.replace(/\D/g,'')+buildSMSBody(a,t)+'" class="badge badge-teal" style="text-decoration:none">💬 Texto</a>':'';
+  const emailLink=t&&t.email?'<a href="'+buildMailtoLink(a,t)+'" class="badge badge-teal" style="text-decoration:none">✉️ Email</a>':'';
+  const div=document.createElement('div');
+  div.className='appel-card';
+  div.style.borderLeftColor=pColor;
+  div.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+    '<div style="flex:1;min-width:0">'+
+    '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
+    '<span style="font-size:11px;font-weight:700;background:'+sBg[statut]+';color:'+sColors[statut]+';padding:2px 8px;border-radius:20px">'+statut+'</span>'+
+    (a.prio==='Urgente'?'<span style="font-size:11px;font-weight:700;background:#fff0ef;color:#ff3b30;padding:2px 8px;border-radius:20px">🔴 Urgent</span>':'')+
+    '</div>'+
+    '<div class="appel-date">'+a.heure+(a.tech?' — '+a.tech:'')+'</div>'+
+    '<div class="appel-title">'+(c?c.nom:'Client inconnu')+' — '+a.titre+'</div>'+
+    datesLabel+
+    (a.notes?'<div class="appel-sub">'+a.notes+'</div>':'')+
+    (t&&(t.cell||t.email)?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'+smsLink+emailLink+
+    '<span class="badge badge-teal ics-btn" style="cursor:pointer" data-id="'+a.id+'">📆 .ics</span></div>':'')+
+    '</div>'+
+    '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;margin-left:8px">'+
+    '<button class="rapport-btn" data-id="'+a.id+'" style="background:none;border:none;cursor:pointer;font-size:18px" title="Créer rapport">📋</button>'+
+    '<button class="edit-btn" data-id="'+a.id+'" style="background:none;border:none;cursor:pointer;font-size:18px" title="Modifier">✏️</button>'+
+    '<button class="del-btn" data-id="'+a.id+'" style="background:none;border:none;cursor:pointer;font-size:18px" title="Supprimer">🗑️</button>'+
+    '</div></div>';
+  // Attach events with data attributes — no inline onclick = no quote issues
+  div.querySelector('.rapport-btn').addEventListener('click',function(e){e.stopPropagation();startRapport(this.dataset.id);});
+  div.querySelector('.edit-btn').addEventListener('click',function(e){e.stopPropagation();editAppel(this.dataset.id);});
+  div.querySelector('.del-btn').addEventListener('click',function(e){e.stopPropagation();deleteAppel(this.dataset.id);});
+  const ics=div.querySelector('.ics-btn');
+  if(ics) ics.addEventListener('click',function(e){e.stopPropagation();doExportICS(this.dataset.id);});
+  return div.outerHTML;
+}
+// Note: outerHTML loses event listeners — re-attach after render
+
+
+function renderAllAppels(){
+  const allAppels=DB.appelsSync();
+  // Undated appels (Non-cédulé / En attente) shown at top
+  const undated=allAppels.filter(a=>!a.date||a.date==='0000-00-00');
+  const dated=allAppels.filter(a=>a.date&&a.date!=='0000-00-00'&&a.date>=today).sort((a,b)=>a.date.localeCompare(b.date)||a.heure.localeCompare(b.heure));
+  const appels=[...undated,...dated];
+  const el=document.getElementById('all-appels');
+  if(!appels.length){el.innerHTML='<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun appel planifié</div></div>';return;}
+  // Add section header for undated appels
+  let html='';
+  if(undated.length){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 6px">Sans date ('+undated.length+')</div>';
+  }
+  el.innerHTML=html+appels.map(a=>appelCardHTML(a)).join('');
+  attachCardEvents(el);
+}
+
+function prevMonth(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCal();}
+function nextMonth(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCal();}
+
+// ════════════════════════════
+//  DATE PICKER (mini calendar)
+// ════════════════════════════
+function renderDP(){
+  document.getElementById('dp-month').textContent=MONTHS[dpMonth]+' '+dpYear;
+  document.getElementById('dp-headers').innerHTML=DAYS.map(d=>'<div class="dp-hdr">'+d+'</div>').join('');
+  const first=new Date(dpYear,dpMonth,1).getDay();
+  const days=new Date(dpYear,dpMonth+1,0).getDate();
+  const prevDays=new Date(dpYear,dpMonth,0).getDate();
+  let total=first+days; if(total%7!==0)total+=7-(total%7);
+  let html='';
+  for(let i=0;i<total;i++){
+    let d,m=dpMonth,y=dpYear,other=false;
+    if(i<first){d=prevDays-(first-1-i);m=dpMonth-1;if(m<0){m=11;y--;}other=true;}
+    else if(i>=first+days){d=i-first-days+1;m=dpMonth+1;if(m>11){m=0;y++;}other=true;}
+    else d=i-first+1;
+    const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const isPast=ds<today;
+    const isSel=selectedDates.includes(ds);
+    const isToday=ds===today;
+    html+='<div class="dp-day'+(other?' other':'')+(isToday?' today':'')+(isSel?' selected':'')+(isPast?' past':'')+'" data-date="'+ds+'">'+d+'</div>';
+  }
+  document.getElementById('dp-days').innerHTML=html;
+  document.querySelectorAll('.dp-day:not(.past)').forEach(el=>{
+    el.addEventListener('click',function(){toggleDate(this.dataset.date);});
+  });
+}
+function dpPrev(){dpMonth--;if(dpMonth<0){dpMonth=11;dpYear--;}renderDP();}
+function dpNext(){dpMonth++;if(dpMonth>11){dpMonth=0;dpYear++;}renderDP();}
+
+function toggleDate(ds){
+  const idx=selectedDates.indexOf(ds);
+  if(idx>=0) selectedDates.splice(idx,1);
+  else selectedDates.push(ds);
+  selectedDates.sort();
+  renderDP();
+  renderChips();
+}
+
+function renderChips(){
+  const el=document.getElementById('date-chips');
+  if(!selectedDates.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);font-style:italic">Aucune date sélectionnée</div>';return;}
+  el.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">'+selectedDates.length+' date(s) sélectionnée(s)</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:5px">'+
+    selectedDates.map(d=>'<div class="date-chip">'+fmtDate(d)+'<button onclick="removeDate(\''+d+'\')">×</button></div>').join('')+
+    '</div>';
+}
+function removeDate(ds){selectedDates=selectedDates.filter(d=>d!==ds);renderDP();renderChips();}
+
+// ════════════════════════════
+//  RECURRENCE
+// ════════════════════════════
+function setRecur(el,type){
+  document.querySelectorAll('.recur-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  curRecur=type;
+  document.getElementById('recur-from-wrap').style.display=type==='none'?'none':'block';
+  if(type==='none'){selectedDates=[];renderDP();renderChips();}
+  else{
+    // Default from = today or selDate
+    document.getElementById('recur-from').value=selDate||today;
+    document.getElementById('recur-count').value=type==='annual'?'3':type==='biannual'?'4':type==='quarterly'?'4':'6';
+  }
+}
+
+function applyRecur(){
+  const from=document.getElementById('recur-from').value;
+  const count=parseInt(document.getElementById('recur-count').value);
+  if(!from){alert('Choisir une date de départ.');return;}
+  const intervals={weekly:7,monthly:0,quarterly:0,biannual:0,annual:0};
+  const months={monthly:1,quarterly:3,biannual:6,annual:12};
+  let dates=[];
+  let base=new Date(from+'T12:00:00');
+  for(let i=0;i<count;i++){
+    const ds=base.toISOString().split('T')[0];
+    if(!dates.includes(ds)) dates.push(ds);
+    if(curRecur==='weekly') base=new Date(base.getTime()+7*86400000);
+    else{
+      base=new Date(base);
+      base.setMonth(base.getMonth()+(months[curRecur]||1));
+    }
+  }
+  selectedDates=dates.sort();
+  // Navigate dp to first date
+  const firstDate=new Date(selectedDates[0]+'T12:00:00');
+  dpYear=firstDate.getFullYear(); dpMonth=firstDate.getMonth();
+  renderDP(); renderChips();
+}
+
+// ════════════════════════════
+//  CLIENT SEARCH
+// ════════════════════════════
+const aInp=document.getElementById('appel-client-input');
+const aDrop=document.getElementById('appel-drop');
+aInp.addEventListener('input',function(){
+  const q=this.value.trim().toLowerCase();
+  if(!q){aDrop.style.display='none';return;}
+  const hits=DB.clientsSync().filter(c=>c.nom.toLowerCase().includes(q)||c.ville.toLowerCase().includes(q)).slice(0,10);
+  aDrop.innerHTML=hits.length?hits.map(c=>'<div class="drop-item" data-id="'+c.id+'"><div class="drop-name">'+c.nom+'</div><div class="drop-sub">'+c.ville+', '+c.province+'</div></div>').join(''):'<div class="drop-empty">Aucun résultat</div>';
+  aDrop.style.display='block';
+  aDrop.querySelectorAll('.drop-item').forEach(el=>{el.addEventListener('pointerdown',function(e){e.preventDefault();pickClient(this.dataset.id);});});
+});
+aInp.addEventListener('blur',function(){setTimeout(()=>aDrop.style.display='none',150);});
+
+function pickClient(id){
+  selClient=DB.clientById(id);
+  aDrop.style.display='none'; aInp.value='';
+  document.getElementById('appel-search-wrap').style.display='none';
+  document.getElementById('appel-client-card').innerHTML=
+    '<div class="card" style="padding:10px;display:flex;align-items:center;gap:10px;background:var(--teal-light);border-color:var(--teal)">'+
+    '<div class="av av-sm">'+initials(selClient.nom)+'</div>'+
+    '<div style="flex:1;font-size:14px;font-weight:600;color:var(--navy)">'+selClient.nom+'</div>'+
+    '<button onclick="changeClient()" style="background:none;border:none;color:var(--teal);font-size:13px;font-weight:600;cursor:pointer">Changer</button></div>';
+  document.getElementById('appel-client-card').style.display='block';
+  const ms=DB.machinesForClient(id);
+  const sel=document.getElementById('appel-machine');
+  sel.innerHTML='<option value="">— Aucune machine spécifiée —</option>'+ms.map(m=>'<option value="'+m.id+'">'+m.type+' · '+m.marque+'</option>').join('');
+  document.getElementById('appel-machine-field').style.display=ms.length?'block':'none';
+}
+function changeClient(){selClient=null;document.getElementById('appel-search-wrap').style.display='block';document.getElementById('appel-client-card').style.display='none';document.getElementById('appel-machine-field').style.display='none';}
+
+// ════════════════════════════
+//  TECH SELECT → update send section live
+// ════════════════════════════
+document.getElementById('appel-tech').addEventListener('change',updateSendSection);
+
+function updateSendSection(){
+  const techName=document.getElementById('appel-tech').value;
+  const titre=document.getElementById('appel-titre').value.trim();
+  const ss=document.getElementById('send-section');
+  if(!techName){ss.style.display='none';return;}
+  const t=(LS.get('techs')||[]).find(x=>x.prenom+' '+x.nom===techName);
+  if(!t||(!t.cell&&!t.email)){ss.style.display='none';return;}
+  ss.style.display='block';
+  // Build preview buttons with current form state
+  const previewAppel={
+    id:'preview',
+    cid:selClient?selClient.id:'',
+    mid:document.getElementById('appel-machine').value||null,
+    titre:titre||'Appel de service',
+    date:selectedDates[0]||today,
+    dates:selectedDates,
+    heure:document.getElementById('appel-heure').value||'08:00',
+    notes:document.getElementById('appel-notes').value,
+    prio:newPrio,
+    tech:techName,
+  };
+  let btns='';
+  if(t.cell){
+    btns+='<a href="sms:'+t.cell.replace(/\D/g,'')+buildSMSBody(previewAppel,t)+'" class="send-btn">'+
+      '<span class="send-btn-ico">💬</span>'+
+      '<div><div class="send-btn-label">Envoyer par texto</div><div class="send-btn-sub">'+t.cell+'</div></div></a>';
+  }
+  if(t.email){
+    btns+='<a href="'+buildMailtoLink(previewAppel,t)+'" class="send-btn">'+
+      '<span class="send-btn-ico">✉️</span>'+
+      '<div><div class="send-btn-label">Envoyer par courriel</div><div class="send-btn-sub">'+t.email+'</div></div></a>';
+  }
+  btns+='<div class="send-btn" onclick="previewExportICS()">'+
+    '<span class="send-btn-ico">📆</span>'+
+    '<div><div class="send-btn-label">Exporter vers Outlook (.ics)</div><div class="send-btn-sub">Inclut le technicien comme invité</div></div></div>';
+  document.getElementById('send-btns').innerHTML=btns;
+}
+
+// Also update send section when titre or dates change
+document.getElementById('appel-titre').addEventListener('input',updateSendSection);
+
+// ════════════════════════════
+//  SAVE
+// ════════════════════════════
+function setStatut(el){
+  document.querySelectorAll('#pills-statut .statut-pill').forEach(p=>{p.className='statut-pill';});
+  const cls={'Non-cédulé':'s-gray','En attente':'s-orange','En cours':'s-blue','Terminé':'s-green'}[el.dataset.v]||'s-gray';
+  el.classList.add(cls);
+  newStatut=el.dataset.v;
+  // Show rapport creation option when Terminé
+  const sec=document.getElementById('create-rapport-section');
+  const btn=document.getElementById('btn-save-appel');
+  if(sec){sec.style.display=newStatut==='Terminé'?'block':'none';}
+  if(btn){btn.style.display=newStatut==='Terminé'?'none':'block';}
+}
+
+document.querySelectorAll('#pills-prio .pill').forEach(el=>{
+  el.addEventListener('click',function(){
+    document.querySelectorAll('#pills-prio .pill').forEach(p=>p.classList.remove('active'));
+    this.classList.add('active'); newPrio=this.dataset.v; updateSendSection();
+  });
+});
+
+function showAddAppel(){
+  selClient=null; selectedDates=[]; curRecur='none'; newPrio='Normale';
+  document.getElementById('appel-client-input').value='';
+  document.getElementById('appel-search-wrap').style.display='block';
+  document.getElementById('appel-client-card').style.display='none';
+  document.getElementById('appel-machine-field').style.display='none';
+  document.getElementById('appel-titre').value='';
+  document.getElementById('appel-heure').value='08:00';
+  document.getElementById('appel-notes').value='';
+  document.getElementById('send-section').style.display='none';
+  document.getElementById('recur-from-wrap').style.display='none';
+  document.querySelectorAll('.recur-pill').forEach(p=>p.classList.remove('active'));
+  document.querySelector('.recur-pill[data-r="none"]').classList.add('active');
+  document.querySelectorAll('#pills-prio .pill').forEach(p=>p.classList.remove('active'));
+  document.querySelector('#pills-prio .pill').classList.add('active');
+  document.querySelectorAll('#pills-statut .statut-pill').forEach(p=>p.className='statut-pill');
+  document.querySelector('#pills-statut .statut-pill').classList.add('s-gray');
+  newStatut='Non-cédulé'; editingAppelId=null;
+  // Load techs
+  const techs=LS.get('techs')||[];
+  const sel=document.getElementById('appel-tech');
+  sel.innerHTML='<option value="">— Non assigné —</option>'+
+    techs.filter(t=>t.statut!=='Inactif').map(t=>'<option value="'+t.prenom+' '+t.nom+'">'+t.prenom+' '+t.nom+(t.spec?' ('+t.spec+')':'')+'</option>').join('');
+  // Init date picker
+  dpYear=new Date().getFullYear(); dpMonth=new Date().getMonth();
+  // Pre-select selDate if coming from day click
+  if(selDate){selectedDates=[selDate];}
+  renderDP(); renderChips();
+  document.getElementById('modal-appel').style.display='flex';
+}
+
+async function saveAppel(){
+  if(!selClient){alert('Veuillez sélectionner un client.');return;}
+  const titre=document.getElementById('appel-titre').value.trim();
+  if(!titre){alert('Le titre est requis.');return;}
+  // Date optional for Non-cédulé and En attente
+  if(!selectedDates.length && newStatut !== 'Non-cédulé' && newStatut !== 'En attente'){
+    alert('Sélectionnez au moins une date.');return;
+  }
+  // Use placeholder date for undated appels
+  if(!selectedDates.length) selectedDates = ['0000-00-00'];
+  const heure=document.getElementById('appel-heure').value||'08:00';
+  const tech=document.getElementById('appel-tech').value;
+  const notes=document.getElementById('appel-notes').value;
+  const mid=document.getElementById('appel-machine').value||null;
+  // Create one appel per date
+  for(const date of selectedDates){
+    const existingId = selectedDates.length === 1 && editingAppelId ? editingAppelId : uid();
+    const existing = editingAppelId ? DB.appelsSync().find(a=>a.id===editingAppelId) : null;
+    await DB.saveAppel({
+      id: existingId,
+      cid: selClient.id, mid: mid||null,
+      titre, date, dates: selectedDates,
+      heure, tech, notes, prio: newPrio,
+      statut: newStatut,
+      created_at: existing ? existing.created_at : new Date().toISOString()
+    });
+  }
+  closeModal();
+  renderCal(); renderAllAppels();
+  if(selDate)selectDay(selDate);
+}
+
+// ════════════════════════════
+//  ICS / SMS / EMAIL BUILDERS
+// ════════════════════════════
+function buildSMSBody(a,t){
+  const c=DB.clientById(a.cid);
+  const datesStr=a.dates&&a.dates.length>1
+    ? a.dates.map(d=>fmtDate(d)).join(', ')
+    : fmtDate(a.date);
+  const msg=encodeURIComponent(
+    'Bonjour '+t.prenom+',\n\n'+
+    'Tu as un appel de service B-Mak :\n'+
+    '📋 '+a.titre+'\n'+
+    '🏭 '+(c?c.nom:'')+'\n'+
+    (c&&c.adresse?'📍 '+c.adresse+', '+c.ville+'\n':'')+
+    '📅 '+datesStr+' à '+a.heure+'\n'+
+    (a.prio==='Urgente'?'⚠️ URGENTE\n':'')+
+    (a.notes?'📝 '+a.notes+'\n':'')+
+    '\nBonne journée!\n— B-Mak ServicePro'
+  );
+  return '?body='+msg;
+}
+
+function buildMailtoLink(a,t){
+  const c=DB.clientById(a.cid);
+  const m=a.mid?DB.machineById(a.mid):null;
+  const datesStr=a.dates&&a.dates.length>1
+    ? a.dates.map(d=>fmtDate(d)).join('\n   ')
+    : fmtDate(a.date);
+  const subj=encodeURIComponent('[B-Mak] Appel de service — '+(c?c.nom:'')+' — '+a.titre);
+  const body=encodeURIComponent(
+    'Bonjour '+t.prenom+',\n\n'+
+    'Tu as un ou plusieurs appels de service B-Mak. Voici les détails :\n\n'+
+    '📋 Description : '+a.titre+'\n'+
+    '🏭 Client : '+(c?c.nom:'')+'\n'+
+    (c&&c.adresse?'📍 Adresse : '+c.adresse+', '+c.ville+', '+c.province+'\n':'')+
+    (c&&c.tel?'📞 Tél. client : '+c.tel+'\n':'')+
+    (m?'🔧 Machine : '+m.type+' ('+m.marque+(m.serial?' · S/N: '+m.serial:'')+')'+'\n':'')+
+    '📅 Date(s) :\n   '+datesStr+'\n'+
+    '🕐 Heure : '+a.heure+'\n'+
+    (a.prio==='Urgente'?'\n⚠️ PRIORITÉ URGENTE\n':'')+
+    (a.notes?'\n📝 Notes : '+a.notes+'\n':'')+
+    '\nCordialement,\nB-Mak ServicePro'
+  );
+  return 'mailto:'+t.email+'?subject='+subj+'&body='+body;
+}
+
+function buildICS(a,t){
+  const c=DB.clientById(a.cid);
+  const dates=a.dates&&a.dates.length?a.dates:[a.date];
+  const now=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  let events='';
+  dates.forEach(date=>{
+    const d=date.replace(/-/g,'');
+    const h=(a.heure||'08:00').replace(':','');
+    const hEnd=String(parseInt(h)+200).padStart(4,'0');
+    events+='BEGIN:VEVENT\r\n'+
+      'UID:'+a.id+'-'+date+'@bmak.app\r\n'+
+      'DTSTAMP:'+now+'\r\n'+
+      'DTSTART:'+d+'T'+h+'00\r\n'+
+      'DTEND:'+d+'T'+hEnd+'00\r\n'+
+      'SUMMARY:B-Mak — '+(c?c.nom:'')+' — '+a.titre+'\r\n'+
+      (t?'ATTENDEE;CN='+t.prenom+' '+t.nom+';ROLE=REQ-PARTICIPANT:MAILTO:'+(t.email||'noreply@bmak.ca')+'\r\n':'')+
+      (a.notes?'DESCRIPTION:'+a.notes.replace(/\n/g,'\\n')+'\r\n':'')+
+      (c&&c.adresse?'LOCATION:'+c.adresse+', '+c.ville+'\r\n':'')+
+      'END:VEVENT\r\n';
+  });
+  return 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//B-Mak ServicePro//FR\r\n'+events+'END:VCALENDAR';
+}
+
+function doExportICS(appelId){
+  const a=DB.appels().find(x=>x.id===appelId);
+  if(!a)return;
+  const t=a.tech?(LS.get('techs')||[]).find(x=>x.prenom+' '+x.nom===a.tech):null;
+  downloadICS(buildICS(a,t), a);
+}
+function previewExportICS(){
+  const titre=document.getElementById('appel-titre').value.trim()||'appel';
+  const techName=document.getElementById('appel-tech').value;
+  const t=techName?(LS.get('techs')||[]).find(x=>x.prenom+' '+x.nom===techName):null;
+  const preview={id:uid(),cid:selClient?selClient.id:'',titre,date:selectedDates[0]||today,dates:selectedDates,heure:document.getElementById('appel-heure').value||'08:00',notes:document.getElementById('appel-notes').value,prio:newPrio};
+  downloadICS(buildICS(preview,t), preview);
+}
+function downloadICS(icsContent, a){
+  const c=DB.clientById(a.cid);
+  const blob=new Blob([icsContent],{type:'text/calendar;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const lnk=document.createElement('a');
+  lnk.href=url;
+  lnk.download='BMak_'+(c?c.nom.replace(/[^a-zA-Z0-9]/g,'_'):'')+'-'+a.titre.replace(/[^a-zA-Z0-9]/g,'_')+'-('+selectedDates.length+'dates).ics';
+  lnk.click(); URL.revokeObjectURL(url);
+}
+
+function editAppel(id){
+  const a=DB.appelsSync().find(x=>x.id===id);
+  if(!a)return;
+  editingAppelId=id;
+  // Reset modal
+  showAddAppel();
+  editingAppelId=id; // restore after showAddAppel resets it
+  // Pre-fill client
+  selClient=DB.clientById(a.cid);
+  if(selClient){
+    document.getElementById('appel-search-wrap').style.display='none';
+    const ini=selClient.nom.split(' ').map(w=>w[0]||'').filter(Boolean).slice(0,2).join('').toUpperCase();
+    document.getElementById('appel-client-card').innerHTML=
+      '<div class="card" style="padding:10px;display:flex;align-items:center;gap:10px;background:var(--teal-light);border-color:var(--teal)">'+
+      '<div class="av av-sm">'+ini+'</div>'+
+      '<div style="flex:1;font-size:14px;font-weight:600;color:var(--navy)">'+selClient.nom+'</div>'+
+      '<button onclick="changeApplClient()" style="background:none;border:none;color:var(--teal);font-size:13px;font-weight:600;cursor:pointer">Changer</button></div>';
+    document.getElementById('appel-client-card').style.display='block';
+    // Load machines
+    const ms=DB.machinesForClient(a.cid);
+    const sel=document.getElementById('appel-machine');
+    sel.innerHTML='<option value="">— Aucune machine —</option>'+ms.map(m=>'<option value="'+m.id+'"'+(m.id===a.mid?' selected':'')+'>'+m.type+' · '+m.marque+'</option>').join('');
+    document.getElementById('appel-machine-field').style.display=ms.length?'block':'none';
+  }
+  // Pre-fill fields
+  document.getElementById('appel-titre').value=a.titre||'';
+  document.getElementById('appel-heure').value=a.heure||'08:00';
+  document.getElementById('appel-notes').value=a.notes||'';
+  // Pre-fill dates
+  selectedDates=a.dates&&a.dates.length?[...a.dates]:[a.date];
+  dpYear=new Date(selectedDates[0]+'T12:00:00').getFullYear();
+  dpMonth=new Date(selectedDates[0]+'T12:00:00').getMonth();
+  renderDP(); renderChips();
+  // Pre-fill prio
+  document.querySelectorAll('#pills-prio .pill').forEach(p=>{
+    p.classList.toggle('active', p.dataset.v===a.prio);
+  });
+  newPrio=a.prio||'Normale';
+  // Pre-fill statut
+  const statutMap={'Non-cédulé':'s-gray','En attente':'s-orange','En cours':'s-blue','Terminé':'s-green'};
+  document.querySelectorAll('#pills-statut .statut-pill').forEach(p=>{
+    p.className='statut-pill';
+    if(p.dataset.v===(a.statut||'Non-cédulé')) p.classList.add(statutMap[p.dataset.v]||'s-gray');
+  });
+  newStatut=a.statut||'Non-cédulé';
+  // Pre-fill tech
+  const techSel=document.getElementById('appel-tech');
+  for(let i=0;i<techSel.options.length;i++){
+    if(techSel.options[i].value===a.tech){techSel.selectedIndex=i;break;}
+  }
+  updateSendSection();
+  document.getElementById('modal-appel').style.display='flex';
+}
+
+async function deleteAppel(id){
+  if(!confirm('Supprimer cet appel ?'))return;
+  await DB.delAppel(id); renderCal(); renderAllAppels();
+  if(selDate)selectDay(selDate);
+}
+function startRapport(id){
+  const appels=DB.appelsSync();
+  const a=appels.find(x=>x.id===id);
+  if(a){
+    localStorage.setItem('bmak_prefill_client', a.cid);
+    localStorage.setItem('bmak_prefill_appel', id);
+  }
+  location.href='/rapport.html';
+}
+function saveAndCreateRapport(){
+  if(!selClient){alert('Veuillez sélectionner un client.');return;}
+  const titre=document.getElementById('appel-titre').value.trim();
+  const date=document.getElementById('appel-heure').value;
+  // Save appel first, then redirect to rapport
+  saveAppel().then ? saveAppel().then(()=>{
+    if(selClient) localStorage.setItem('bmak_prefill_client', selClient.id);
+    // Find the saved appel and pass its id
+    const appels=DB.appelsSync();
+    const last=appels[appels.length-1];
+    if(last) localStorage.setItem('bmak_prefill_appel', last.id);
+    location.href='/rapport.html';
+  }) : (function(){
+    if(selClient) localStorage.setItem('bmak_prefill_client', selClient.id);
+    const appels=DB.appelsSync();
+    const last=appels[appels.length-1];
+    if(last) localStorage.setItem('bmak_prefill_appel', last.id);
+    location.href='/rapport.html';
+  })();
+}
+function closeModal(){document.getElementById('modal-appel').style.display='none';}
+
+async function init() {
+  // Preload all data into cache so clientsSync() works in the modal
+  await Promise.all([DB.clients(), DB.machines(), DB.appels(), DB.techs()]);
+  renderCal();
+  renderAllAppels();
+}
+</script>
+
+<script>
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
+}
+async function init() {
+  await Promise.all([DB.clients(), DB.machines(), DB.appels(), DB.techs()]);
+  renderCal();
+  renderAllAppels();
+}
+init();
+</script>
+<script>
+// Force reload if db.js is cached old version
+setTimeout(function() {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 12) {
+    console.warn('Old db.js detected, forcing reload...');
+    window.location.reload(true);
+  }
+}, 500);
+</script>
+</body></html>

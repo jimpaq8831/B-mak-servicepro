@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>B-Mak — Import</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,sans-serif;background:#022840;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#fff;border-radius:16px;padding:32px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.logo{font-size:28px;font-weight:900;font-style:italic;color:#037F8C;margin-bottom:6px}
+h1{font-size:18px;font-weight:700;color:#022840;margin-bottom:8px}
+.sub{font-size:14px;color:#6c7a89;margin-bottom:24px;line-height:1.5}
+.progress-wrap{background:#f2f2f7;border-radius:8px;overflow:hidden;margin-bottom:12px;height:14px}
+.progress-bar{height:100%;background:#037F8C;width:0%;transition:width .3s;border-radius:8px}
+.status{font-size:14px;color:#6c7a89;margin-bottom:20px;min-height:22px}
+.status.error{color:#c0392b;font-weight:600}
+.status.success{color:#1a7a4a;font-weight:700}
+.btn{width:100%;padding:15px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;border:none;background:#037F8C;color:#fff;margin-bottom:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-nav{width:100%;padding:15px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;border:none;background:#022840;color:#fff;display:none}
+.log{background:#f8f8f8;border-radius:8px;padding:12px;font-size:12px;font-family:monospace;color:#444;max-height:180px;overflow-y:auto;margin-top:12px;display:none;line-height:1.8}
+</style>
+</head><body>
+<script>
+// Unregister old service workers and clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+</script>
+
+<script>
+// Unregister old service workers and clear all caches
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+</script>
+<div class="card">
+  <div class="logo">B-Mak</div>
+  <h1>Import des données initiales</h1>
+  <div class="sub">Importe vos <strong>415 clients</strong> et <strong>1 024 machines</strong> dans Supabase.</div>
+  
+  <div style="margin-bottom:16px">
+    <label style="display:block;font-size:12px;font-weight:700;color:#6c7a89;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Supabase Project URL</label>
+    <input id="inp-url" type="text" placeholder="https://xxxxxxxx.supabase.co" 
+      style="width:100%;padding:11px 13px;font-size:14px;border:1.5px solid #d1d1d6;border-radius:8px;font-family:monospace;outline:none"
+      oninput="this.style.borderColor=this.value.includes('supabase.co')?'#037F8C':'#d1d1d6'">
+  </div>
+  <div style="margin-bottom:20px">
+    <label style="display:block;font-size:12px;font-weight:700;color:#6c7a89;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Supabase Anon Key</label>
+    <input id="inp-key" type="text" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." 
+      style="width:100%;padding:11px 13px;font-size:14px;border:1.5px solid #d1d1d6;border-radius:8px;font-family:monospace;outline:none"
+      oninput="this.style.borderColor=this.value.startsWith('eyJ')?'#037F8C':'#d1d1d6'">
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="bar"></div></div>
+  <div class="status" id="status">Prêt.</div>
+  <button class="btn" id="btn" onclick="startImport()">🚀 Démarrer l'import</button>
+  <button class="btn-nav" id="nav-btn" onclick="location.href='/'">✅ Ouvrir l'application →</button>
+  <div class="log" id="log"></div>
+</div>
+
+<script>
+// ── Self-contained: no dependency on db.js ──
+// Supabase credentials — read from db.js values at runtime via a fresh fetch
+// to avoid service worker cache issues
+
+function log(msg, type) {
+  var el = document.getElementById('log');
+  el.style.display = 'block';
+  var color = type==='error' ? '#c0392b' : type==='ok' ? '#1a7a4a' : '#444';
+  el.innerHTML += '<div style="color:'+color+'">'+msg+'</div>';
+  el.scrollTop = el.scrollHeight;
+}
+
+function setP(pct, msg, type) {
+  document.getElementById('bar').style.width = pct+'%';
+  var s = document.getElementById('status');
+  s.textContent = msg;
+  s.className = 'status'+(type?' '+type:'');
+}
+
+async function getCredentials() {
+  var url = document.getElementById('inp-url').value.trim();
+  var key = document.getElementById('inp-key').value.trim();
+  if (url && key) return { url: url, key: key };
+  return null;
+}
+
+async function importBatch(sb, table, rows, start, end, totalStart, totalEnd) {
+  var BATCH = 40; // Small batches = more reliable
+  var range = totalEnd - totalStart;
+  var success = 0;
+  for (var i = 0; i < rows.length; i += BATCH) {
+    var batch = rows.slice(i, Math.min(i+BATCH, rows.length));
+    // Use insert with ignoreDuplicates to safely re-run without errors on existing rows
+    var result = await sb.from(table).insert(batch, {ignoreDuplicates: true});
+    if (result.error) {
+      log('⚠️ Insert failed, trying upsert for batch '+i+': '+result.error.message, 'error');
+      await new Promise(function(r){ setTimeout(r, 300); });
+      result = await sb.from(table).upsert(batch, {onConflict:'id'});
+      if (result.error) {
+        log('❌ Batch '+i+' failed: '+JSON.stringify(result.error), 'error');
+        // Don't throw — continue with next batch
+      }
+    }
+    success += batch.length;
+    var pct = totalStart + Math.round(range * success / rows.length);
+    setP(pct, table+' : '+success+' / '+rows.length+'...');
+    if (i % 200 === 0 || i + BATCH >= rows.length) log('✓ '+table+' '+success+'/'+rows.length, 'ok');
+    await new Promise(function(r){ setTimeout(r, 150); }); // avoid rate limiting
+  }
+  log('✅ '+table+' — '+success+' lignes importées', 'ok');
+}
+
+async function startImport() {
+  var btn = document.getElementById('btn');
+  btn.disabled = true; btn.textContent = '⏳ Import en cours...';
+
+  try {
+    setP(2, 'Lecture des identifiants Supabase...');
+    var creds = await getCredentials();
+
+    if (!creds || creds.url === 'VOTRE_SUPABASE_URL') {
+      throw new Error('Colle tes clés Supabase dans les champs ci-dessus.');
+    }
+    log('URL: '+creds.url.slice(0,30)+'...', 'ok');
+
+    setP(5, 'Connexion à Supabase...');
+    var sb = window.supabase.createClient(creds.url, creds.key);
+
+    // Check if already seeded
+    var check = await sb.from('clients').select('*', {count:'exact', head:true});
+    if (check.count > 0) {
+      setP(100, '✅ Déjà importé ! ('+check.count+' clients en base)', 'success');
+      log('Base déjà remplie avec '+check.count+' clients.', 'ok');
+      document.getElementById('nav-btn').style.display = 'block';
+      btn.style.display = 'none';
+      return;
+    }
+
+    // Load seed data
+    setP(8, 'Chargement des données...');
+    var seedResp = await fetch('/seed.js?nocache='+Date.now());
+    var seedText = await seedResp.text();
+    // Parse seed data safely
+    var tmpWin = {};
+    (new Function('window', seedText))(tmpWin);
+    var clients = tmpWin.SEED_CLIENTS || [];
+    var machines = tmpWin.SEED_MACHINES || [];
+    log('Données chargées: '+clients.length+' clients, '+machines.length+' machines', 'ok');
+
+    if (!clients.length) throw new Error('Données seed vides — vérifiez seed.js');
+
+    // Import clients if needed
+    if (needClients) {
+      setP(10, 'Import des clients...');
+      await importBatch(sb, 'clients', clients, 0, clients.length, 10, 55);
+      log('✅ '+clients.length+' clients importés !', 'ok');
+    } else {
+      setP(55, 'Clients OK — passage aux machines...');
+      log('✓ Clients déjà en base', 'ok');
+    }
+
+    // Import machines if needed
+    if (needMachines) {
+      setP(55, 'Import des machines...');
+      await importBatch(sb, 'machines', machines, 0, machines.length, 55, 97);
+      log('✅ '+machines.length+' machines importées !', 'ok');
+    } else {
+      setP(97, 'Machines OK');
+      log('✓ Machines déjà en base', 'ok');
+    }
+
+    // Verify final counts
+    var finalC = await sb.from('clients').select('*', {count:'exact', head:true});
+    var finalM = await sb.from('machines').select('*', {count:'exact', head:true});
+    var msg = '✅ Terminé ! '+finalC.count+' clients, '+finalM.count+' machines en base.';
+    if (finalM.count < machines.length) {
+      msg += ' ⚠️ '+(machines.length - finalM.count)+' machines manquantes — relance l\'import.';
+    }
+    setP(100, msg, 'success');
+    log('Vérification finale: '+finalC.count+' clients, '+finalM.count+'/'+machines.length+' machines', finalM.count >= machines.length ? 'ok' : 'error');
+    document.getElementById('nav-btn').style.display = 'block';
+    btn.style.display = 'none';
+
+  } catch(e) {
+    setP(0, '❌ Erreur : '+e.message, 'error');
+    log('Erreur: '+e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '🔄 Réessayer';
+  }
+}
+</script>
+</body></html>
