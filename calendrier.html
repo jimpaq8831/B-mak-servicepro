@@ -996,13 +996,66 @@ function renderKanban() {
     e.stopPropagation();
     const appels = DB.appelsSync();
     const appel = appels.find(a => a.id === this.dataset.id);
-    if (appel) {
-      await DB.saveAppel({...appel, statut: this.dataset.status});
+    if (!appel) return;
+    const newStatus = this.dataset.status;
+    const needsDate = (newStatus === 'En cours' || newStatus === 'Terminé' || newStatus === 'En attente');
+    const hasDate = appel.date && appel.date !== '0000-00-00' && appel.date !== '';
+    if (needsDate && !hasDate) {
+      // Show quick date picker modal
+      quickDatePick(appel, newStatus);
+    } else {
+      await DB.saveAppel({...appel, statut: newStatus});
       renderKanban();
       renderCal();
+      renderAllAppels();
     }
   }));
 }
 
+
+// ── Quick date picker for Kanban status change ──
+let _qdAppel = null, _qdStatus = null;
+function quickDatePick(appel, newStatus) {
+  _qdAppel = appel;
+  _qdStatus = newStatus;
+  const c = DB.clientById(appel.cid);
+  const statusLabels = {'En attente':'En attente','En cours':'En cours','Terminé':'Terminé'};
+  document.getElementById('qd-title').textContent = '→ ' + (statusLabels[newStatus] || newStatus);
+  document.getElementById('qd-sub').textContent = (c ? c.nom : '') + ' — ' + appel.titre;
+  document.getElementById('qd-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('qd-heure').value = appel.heure || '08:00';
+  document.getElementById('modal-quick-date').style.display = 'flex';
+}
+async function confirmQuickDate() {
+  const date = document.getElementById('qd-date').value;
+  const heure = document.getElementById('qd-heure').value;
+  if (!date) { alert('Veuillez choisir une date.'); return; }
+  document.getElementById('modal-quick-date').style.display = 'none';
+  await DB.saveAppel({..._qdAppel, statut: _qdStatus, date, dates: [date], heure});
+  renderKanban();
+  renderCal();
+  renderAllAppels();
+  _qdAppel = null; _qdStatus = null;
+}
+
 </script>
+
+<!-- Quick date modal -->
+<div class="modal-bg" id="modal-quick-date" style="display:none">
+<div class="modal" style="max-height:auto">
+  <button class="modal-close" onclick="document.getElementById('modal-quick-date').style.display='none'">✕</button>
+  <div class="modal-title" id="qd-title">Céduler l'appel</div>
+  <div style="font-size:13px;color:var(--text3);margin-bottom:14px" id="qd-sub"></div>
+  <div class="field">
+    <label class="lbl">Date *</label>
+    <input type="date" id="qd-date" style="font-size:16px">
+  </div>
+  <div class="field">
+    <label class="lbl">Heure</label>
+    <input type="time" id="qd-heure" value="08:00" style="font-size:16px">
+  </div>
+  <button class="btn btn-primary" onclick="confirmQuickDate()">✅ Confirmer</button>
+</div>
+</div>
+
 </body></html>
