@@ -396,8 +396,8 @@ function renderStepDots(n){
   document.getElementById('steps').innerHTML=[1,2,3,4].map(i=>'<div class="step-dot'+(i<=n?' done':'')+'"></div>').join('');
 }
 function goStep(n){
-  // Auto-save draft when navigating between steps
-  if (selClient && n > 1) saveDraft();
+  // Auto-save draft when navigating (not on final step 5)
+  if (selClient && n > 1 && n < 5 && !savedSigImg) saveDraft();
   [1,2,3,4,5].forEach(i=>{const el=document.getElementById('s'+i);if(el)el.style.display=i===n?'block':'none';});
   curStep=n;
   renderStepDots(n);
@@ -631,7 +631,8 @@ async function genPDF(){
   if (brouillonId) rapport.id = brouillonId;
   rapport.statut = 'final';
   await DB.saveRapport(rapport);
-  brouillonId = null;
+  const savedBrouillonId = brouillonId;
+  brouillonId = null; // Clear BEFORE goStep(5) to prevent re-save
 
   // Auto-create a "Terminé" appel de service in the calendar
   // (only if not coming from an existing appel)
@@ -716,9 +717,15 @@ async function loadDraft(id) {
   
   // Step 2: Select machine
   if (draft.mid) {
-    const machEl = document.getElementById('mi-' + draft.mid);
-    if (machEl) machEl.click();
-    await new Promise(r => setTimeout(r, 100));
+    // Retry until machine element renders
+    let tries2 = 0;
+    await new Promise(resolve => {
+      const tryClick2 = setInterval(() => {
+        const el = document.querySelector('[data-mid="' + draft.mid + '"]');
+        if(el){ el.click(); clearInterval(tryClick2); resolve(); }
+        else if(++tries2 > 10){ clearInterval(tryClick2); resolve(); }
+      }, 150);
+    });
   }
   
   // Step 3: Fill fields
@@ -750,10 +757,11 @@ async function loadDraft(id) {
 
 
 // Auto-save every 30 seconds
-setInterval(() => { if (selClient && curStep > 1) saveDraft(); }, 30000);
+setInterval(() => { if (selClient && curStep > 1) saveDraft(); }, 300000);
 
 function resetForm(){
   selClient=null;selMachine=null;tasks=[];sigDots=0;savedSigImg=null;brouillonId=null;
+  localStorage.removeItem('bmak_last_appel_id');localStorage.removeItem('bmak_draft_id');
   Object.keys(D).forEach(k=>D[k]='');
   localStorage.removeItem('bmak_last_appel_id');
   document.getElementById('client-search-wrap').style.display='block';
@@ -799,7 +807,15 @@ async function init() {
       if(appelDate&&appelDate!=='0000-00-00') document.getElementById('f-date').value=appelDate;
       if(appel.heure){ const [hh,mm]=appel.heure.split(':'); TW.sh=parseInt(hh)||8; TW.sm=parseInt(mm)||0; twUpdate(); }
       if(appel.tech){ document.getElementById('f-tech').value=appel.tech; const ts=document.getElementById('f-tech-sel'); for(let i=0;i<ts.options.length;i++){if(ts.options[i].value===appel.tech){ts.selectedIndex=i;break;}} }
-      if(appel.mid){ await new Promise(r=>setTimeout(r,200)); const el=document.getElementById('mi-'+appel.mid); if(el)el.click(); }
+      if(appel.mid){
+        // Retry machine click until element is rendered
+        let tries = 0;
+        const tryClick = setInterval(() => {
+          const el = document.querySelector('[data-mid="'+appel.mid+'"]');
+          if(el){ el.click(); clearInterval(tryClick); }
+          else if(++tries > 10) clearInterval(tryClick);
+        }, 150);
+      }
       if(tasks.length){
         const lower=(appel.titre||'').toLowerCase();
         if(lower.includes('maintenan')||lower.includes('préven')) tasks[0].itype='Maintenance préventive';
@@ -829,7 +845,7 @@ if('serviceWorker' in navigator) {
 <script>
 // Force reload if db.js is cached old version
 setTimeout(function() {
-  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 18) {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 20) {
     console.warn('Old db.js detected, forcing reload...');
     window.location.reload(true);
   }
