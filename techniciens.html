@@ -188,6 +188,12 @@ function renderList(q='') {
   });
 }
 
+const DBT = {
+  techs: () => LS.get('techs') || [],
+  techById: id => (LS.get('techs') || []).find(t => t.id === id),
+  saveTechs: v => LS.set('techs', v),
+};
+
 function showDetail(id) {
   curTech = DBT.techById(id);
   if (!curTech) return;
@@ -444,7 +450,7 @@ async function saveTech() {
 
 async function deleteTech() {
   if (!confirm('Supprimer '+curTech.prenom+' '+curTech.nom+' ?')) return;
-  DBT.saveTechs(LS.get('techs') || [].filter(t => t.id !== curTech.id));
+  DBT.saveTechs((LS.get('techs') || []).filter(t => t.id !== curTech.id));
   backToList();
 }
 
@@ -466,7 +472,7 @@ if('serviceWorker' in navigator) {
 <script>
 // Force reload if db.js is cached old version
 setTimeout(function() {
-  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 25) {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 26) {
     console.warn('Old db.js detected, forcing reload...');
     window.location.reload(true);
   }
