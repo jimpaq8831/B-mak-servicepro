@@ -811,7 +811,7 @@ function resetForm(){
 document.getElementById('f-date').value=document.getElementById('f-date').value||new Date().toISOString().split('T')[0];
 addTask();
 renderStepDots(1);
-n getItypeFromTitre(titre) {
+function getItypeFromTitre(titre) {
   const l = (titre||'').toLowerCase();
   if(l.includes('maintenan')||l.includes('préven')) return 'Maintenance préventive';
   if(l.includes('répara')||l.includes('repair')) return 'Réparation';
