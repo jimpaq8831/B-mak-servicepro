@@ -1,6 +1,6 @@
 // ── B-Mak ServicePro — db.js ── v12
 // Supabase cloud DB with localStorage offline fallback
-const DB_VERSION = 17;
+const DB_VERSION = 18;
 
 // ┌─────────────────────────────────────────────┐
 // │  REPLACE THESE TWO VALUES AFTER SETUP       │
@@ -100,8 +100,14 @@ async function dbUpsert(table, row) {
   if (table === 'rapports') {
     if (row.sigImg !== undefined) { row.sig_img = row.sigImg; delete row.sigImg; }
     if (row.savedAt !== undefined) { row.saved_at = row.savedAt; delete row.savedAt; }
-    // Remove undefined values that cause 400 errors
-    Object.keys(row).forEach(k => { if (row[k] === undefined) delete row[k]; });
+    // Keep only columns that exist in Supabase schema
+    const RAPPORT_COLS = ['id','cid','mid','tech','date','rnum','dur','tstart','tend',
+      'taches','signer','sig_img','saved_at','statut','created_at','updated_at'];
+    Object.keys(row).forEach(k => {
+      if (!RAPPORT_COLS.includes(k) || row[k] === undefined) delete row[k];
+    });
+    // date is required - use today if missing
+    if (!row.date) row.date = new Date().toISOString().split('T')[0];
   }
   // Remove fields that don't exist in Supabase schema
   if (table === 'appels') {
