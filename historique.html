@@ -318,6 +318,11 @@ function showDetail(id){
     b.textContent='📄 Télécharger le PDF';
     b.onclick = () => regenPDF(r.id);
     btnRow.appendChild(b);
+    const bEdit = document.createElement('button');
+    bEdit.className='btn btn-out'; bEdit.style.cssText='font-size:14px;padding:11px';
+    bEdit.textContent='✏️ Modifier';
+    bEdit.onclick = () => editRapport(r.id);
+    btnRow.appendChild(bEdit);
   }
   const delBtn = document.createElement('button');
   delBtn.className='btn btn-out'; delBtn.style.cssText='width:auto;padding:11px 14px';
@@ -354,6 +359,12 @@ function showDetail(id){
   document.getElementById('modal-detail').style.display='flex';
 }
 
+
+function editRapport(id){
+  // Open rapport for editing (keeps statut as final)
+  localStorage.setItem('bmak_edit_rapport_id', id);
+  location.href = './rapport.html';
+}
 
 function regenPDF(id){
   const r = DB.rapportsSync().find(x => x.id === id);

@@ -358,8 +358,9 @@ if ('serviceWorker' in navigator) {
       <div id="rev-tasks" style="font-size:14px;color:var(--navy)"></div>
     </div>
 
-    <button class="btn btn-primary" id="btn-pdf" onclick="genPDF()">📄 Générer le rapport PDF</button>
-    <div class="btn-row" style="margin-top:10px">
+    <button class="btn btn-primary" id="btn-finish" onclick="finishRapport(this)" style="margin-bottom:10px">✅ Terminer le rapport</button>
+    <button class="btn btn-out" id="btn-pdf" onclick="genPDFOnly()" style="margin-bottom:10px">📄 Générer le PDF seulement</button>
+    <div class="btn-row" style="margin-top:4px">
       <button class="btn btn-out" onclick="goStep(3)">← Retour</button>
     </div>
   </div>
@@ -368,7 +369,7 @@ if ('serviceWorker' in navigator) {
   <div id="s5" style="display:none;text-align:center;padding:40px 0">
     <div style="font-size:60px;margin-bottom:16px">✅</div>
     <div style="font-size:22px;font-weight:800;color:var(--navy);margin-bottom:8px">Rapport enregistré !</div>
-    <div style="font-size:14px;color:var(--text3);line-height:1.6;margin-bottom:24px">Le PDF a été téléchargé et le rapport est sauvegardé dans l'historique.</div>
+    <div style="font-size:14px;color:var(--text3);line-height:1.6;margin-bottom:24px">Le rapport est terminé et sauvegardé dans l'historique.</div>
     <button class="btn btn-primary" onclick="genPDF()" style="margin-bottom:10px">📄 Retélécharger le PDF</button>
     <button class="btn btn-out" onclick="resetForm()">+ Nouveau rapport</button>
     <button class="btn btn-out" style="margin-top:8px" onclick="location.href='./historique.html'">📁 Voir l'historique</button>
@@ -620,8 +621,33 @@ function fillReview(){
 }
 
 // PDF GENERATION
-async function genPDF(){
-  const btn=document.getElementById('btn-pdf');
+async function genPDFOnly() {
+  // Just generate PDF without finishing the rapport
+  if(!selClient){ alert('Veuillez sélectionner un client.'); return; }
+  const D2 = collectFormData();
+  if(!D2) return;
+  try {
+    buildReportPDF({
+      taches: tasks, signer: D2.signer, rnum: D2.rnum,
+      dur: D2.dur, date: D2.date, tech: D2.tech,
+      cid: selClient.id, mid: selMachine ? selMachine.id : null
+    }, selClient, selMachine, savedSigImg);
+  } catch(e){ alert('Erreur PDF: ' + e.message); }
+}
+
+function collectFormData() {
+  const signer = document.getElementById('f-signer') ? document.getElementById('f-signer').value : '';
+  const rnum = document.getElementById('f-rnum').value;
+  const date = document.getElementById('f-date').value;
+  const tech = document.getElementById('f-tech').value || document.getElementById('f-tech-sel').value;
+  if(!date){ alert('La date est requise.'); return null; }
+  if(!tech){ alert('Le technicien est requis.'); return null; }
+  D.tech = tech; D.date = date; D.rnum = rnum; D.signer = signer;
+  return { signer, rnum, date, tech };
+}
+
+async function finishRapport(btn){
+  if(!btn) btn=document.getElementById('btn-finish');
   if(btn){btn.textContent='⏳ Génération...';btn.disabled=true;}
   await new Promise(r=>setTimeout(r,80));
   try{buildReportPDF({taches:tasks,signer:D.signer,rnum:D.rnum,dur:D.dur,date:D.date,tech:D.tech,cid:selClient.id,mid:selMachine?selMachine.id:null}, selClient, selMachine, savedSigImg);}catch(e){alert('Erreur PDF: '+e.message);}
@@ -920,6 +946,22 @@ async function applyDraft(draft) {
   }
 }
 
+  // Load final rapport for editing from historique
+  const editId = localStorage.getItem('bmak_edit_rapport_id');
+  if(editId){
+    localStorage.removeItem('bmak_edit_rapport_id');
+    await DB.rapports(); // ensure loaded
+    const rapport = DB.rapportsSync().find(r=>r.id===editId);
+    if(rapport){
+      brouillonId = rapport.id;
+      await applyDraft(rapport);
+      setTimeout(()=>{
+        const btn = document.getElementById('btn-finish');
+        if(btn) btn.textContent = '💾 Sauvegarder les modifications';
+      }, 200);
+    }
+  }
+}
 init();
 
 </script>
@@ -932,7 +974,7 @@ if('serviceWorker' in navigator) {
 <script>
 // Force reload if db.js is cached old version
 setTimeout(function() {
-  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 23) {
+  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 24) {
     console.warn('Old db.js detected, forcing reload...');
     window.location.reload(true);
   }
