@@ -10,12 +10,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="B-Mak ServicePro">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="/seed.js"></script>
-  <script src="/db.js"></script>
+  <script src="./seed.js"></script>
+  <script src="./db.js"></script>
 </head><body>
 <script>
 // Unregister old service workers and clear all caches
@@ -123,11 +123,11 @@ if ('serviceWorker' in navigator) {
 </div></div>
 
 <nav class="nav">
-  <a href="/index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
-  <a href="/clients.html" class="nav-item active"><span class="nav-icon">🏭</span>Clients</a>
-  <a href="/rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
-  <a href="/techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
-  <a href="/calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
+  <a href="./index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
+  <a href="./clients.html" class="nav-item active"><span class="nav-icon">🏭</span>Clients</a>
+  <a href="./rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
+  <a href="./techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
+  <a href="./calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
 </nav>
 
 
@@ -296,7 +296,7 @@ async function saveMachine(){
 }
 async function deleteMachine(id){if(!confirm('Supprimer cette machine ?'))return;await DB.delMachine(id);renderMachines();}
 function closeModal(id){document.getElementById(id).style.display='none';}
-function newRapportFromClient(){localStorage.setItem('bmak_prefill_client',curClient.id);location.href='/rapport.html';}
+function newRapportFromClient(){localStorage.setItem('bmak_prefill_client',curClient.id);location.href='./rapport.html';}
 document.getElementById('search').addEventListener('input',function(){renderList(this.value);});
 
 async function init() {
@@ -347,7 +347,7 @@ function cancelTransfer(){transferToClientId=null;document.getElementById('m-tra
 
 <script>
 if('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
+  navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
 }
 </script>
 <script>

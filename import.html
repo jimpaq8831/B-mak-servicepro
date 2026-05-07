@@ -149,7 +149,7 @@ async function startImport() {
 
     // Load seed data
     setP(8, 'Chargement des données...');
-    var seedResp = await fetch('/seed.js?nocache='+Date.now());
+    var seedResp = await fetch('./seed.js?nocache='+Date.now());
     var seedText = await seedResp.text();
     // Parse seed data safely
     var tmpWin = {};

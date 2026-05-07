@@ -10,12 +10,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="B-Mak ServicePro">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="/seed.js"></script>
-  <script src="/db.js"></script>
+  <script src="./seed.js"></script>
+  <script src="./db.js"></script>
 <style>
 .date-picker-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:6px}
 .dp-hdr{text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:3px 0}
@@ -255,11 +255,11 @@ if ('serviceWorker' in navigator) {
 </div></div>
 
 <nav class="nav">
-  <a href="/index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
-  <a href="/clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
-  <a href="/rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
-  <a href="/techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
-  <a href="/calendrier.html" class="nav-item active"><span class="nav-icon">📅</span>Agenda</a>
+  <a href="./index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
+  <a href="./clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
+  <a href="./rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
+  <a href="./techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
+  <a href="./calendrier.html" class="nav-item active"><span class="nav-icon">📅</span>Agenda</a>
 </nav>
 
 
@@ -805,7 +805,7 @@ function startRapport(id){
     localStorage.setItem('bmak_prefill_client', a.cid);
     localStorage.setItem('bmak_prefill_appel', id);
   }
-  location.href='/rapport.html';
+  location.href='./rapport.html';
 }
 function saveAndCreateRapport(){
   if(!selClient){alert('Veuillez sélectionner un client.');return;}
@@ -818,13 +818,13 @@ function saveAndCreateRapport(){
     const appels=DB.appelsSync();
     const last=appels[appels.length-1];
     if(last) localStorage.setItem('bmak_prefill_appel', last.id);
-    location.href='/rapport.html';
+    location.href='./rapport.html';
   }) : (function(){
     if(selClient) localStorage.setItem('bmak_prefill_client', selClient.id);
     const appels=DB.appelsSync();
     const last=appels[appels.length-1];
     if(last) localStorage.setItem('bmak_prefill_appel', last.id);
-    location.href='/rapport.html';
+    location.href='./rapport.html';
   })();
 }
 function closeModal(){document.getElementById('modal-appel').style.display='none';}
@@ -839,7 +839,7 @@ async function init() {
 
 <script>
 if('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
+  navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
 }
 async function init() {
   await Promise.all([DB.clients(), DB.machines(), DB.appels(), DB.techs()]);

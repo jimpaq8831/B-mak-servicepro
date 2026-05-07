@@ -10,12 +10,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="B-Mak ServicePro">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="/seed.js"></script>
-  <script src="/db.js"></script>
+  <script src="./seed.js"></script>
+  <script src="./db.js"></script>
 </head><body>
 <script>
 // Unregister old service workers and clear all caches
@@ -54,25 +54,25 @@ if ('serviceWorker' in navigator) {
 
   <div class="sec">Accès rapide</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-    <a href="/rapport.html" style="text-decoration:none">
+    <a href="./rapport.html" style="text-decoration:none">
       <div class="card" style="text-align:center;padding:20px 10px;cursor:pointer">
         <div style="font-size:30px;margin-bottom:6px">📋</div>
         <div style="font-size:13px;font-weight:700;color:var(--navy)">Nouveau rapport</div>
       </div>
     </a>
-    <a href="/calendrier.html" style="text-decoration:none">
+    <a href="./calendrier.html" style="text-decoration:none">
       <div class="card" style="text-align:center;padding:20px 10px;cursor:pointer">
         <div style="font-size:30px;margin-bottom:6px">📅</div>
         <div style="font-size:13px;font-weight:700;color:var(--navy)">Calendrier</div>
       </div>
     </a>
-    <a href="/clients.html" style="text-decoration:none">
+    <a href="./clients.html" style="text-decoration:none">
       <div class="card" style="text-align:center;padding:20px 10px;cursor:pointer">
         <div style="font-size:30px;margin-bottom:6px">🏭</div>
         <div style="font-size:13px;font-weight:700;color:var(--navy)">Clients</div>
       </div>
     </a>
-    <a href="/historique.html" style="text-decoration:none">
+    <a href="./historique.html" style="text-decoration:none">
       <div class="card" style="text-align:center;padding:20px 10px;cursor:pointer">
         <div style="font-size:30px;margin-bottom:6px">📁</div>
         <div style="font-size:13px;font-weight:700;color:var(--navy)">Historique</div>
@@ -82,11 +82,11 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <nav class="nav">
-  <a href="/index.html" class="nav-item active"><span class="nav-icon">🏠</span>Accueil</a>
-  <a href="/clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
-  <a href="/rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
-  <a href="/techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
-  <a href="/calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
+  <a href="./index.html" class="nav-item active"><span class="nav-icon">🏠</span>Accueil</a>
+  <a href="./clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
+  <a href="./rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
+  <a href="./techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
+  <a href="./calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
 </nav>
 
 
@@ -138,7 +138,7 @@ async function init() {
 
 <script>
 if('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
+  navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
 }
 </script>
 <script>

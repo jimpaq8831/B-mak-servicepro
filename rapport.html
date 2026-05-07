@@ -10,12 +10,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="B-Mak ServicePro">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="/seed.js"></script>
-  <script src="/db.js"></script>
+  <script src="./seed.js"></script>
+  <script src="./db.js"></script>
 </head><body>
 <script>
 // Unregister old service workers and clear all caches
@@ -41,7 +41,7 @@ if ('serviceWorker' in navigator) {
 <div class="hdr">
   <div class="hdr-logo">B-Mak</div>
   <div class="hdr-title" id="hdr-title">Nouveau rapport</div>
-  <a href="/index.html" class="hdr-back">✕ Annuler</a>
+  <a href="./index.html" class="hdr-back">✕ Annuler</a>
 </div>
 
 <div class="main" id="form-main">
@@ -197,16 +197,16 @@ if ('serviceWorker' in navigator) {
     <div style="font-size:14px;color:var(--text3);line-height:1.6;margin-bottom:24px">Le PDF a été téléchargé et le rapport est sauvegardé dans l'historique.</div>
     <button class="btn btn-primary" onclick="genPDF()" style="margin-bottom:10px">📄 Retélécharger le PDF</button>
     <button class="btn btn-out" onclick="resetForm()">+ Nouveau rapport</button>
-    <button class="btn btn-out" style="margin-top:8px" onclick="location.href='/historique.html'">📁 Voir l'historique</button>
+    <button class="btn btn-out" style="margin-top:8px" onclick="location.href='./historique.html'">📁 Voir l'historique</button>
   </div>
 </div>
 
 <nav class="nav">
-  <a href="/index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
-  <a href="/clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
-  <a href="/rapport.html" class="nav-item active"><span class="nav-icon">📋</span>Rapport</a>
-  <a href="/techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
-  <a href="/calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
+  <a href="./index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
+  <a href="./clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
+  <a href="./rapport.html" class="nav-item active"><span class="nav-icon">📋</span>Rapport</a>
+  <a href="./techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
+  <a href="./calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
 </nav>
 
 
@@ -578,7 +578,7 @@ init();
 
 <script>
 if('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
+  navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
 }
 </script>
 <script>
