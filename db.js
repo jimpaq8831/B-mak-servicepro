@@ -80,6 +80,14 @@ async function dbGet(table) {
     if (data.length < 1000) break; // last page — fewer than 1000 rows returned
     from += 1000;
   }
+  // Normalize field names back from Supabase schema
+  if (table === 'rapports') {
+    allData = allData.map(r => {
+      if (r.sig_img !== undefined) { r.sigImg = r.sig_img; }
+      if (r.saved_at !== undefined) { r.savedAt = r.saved_at; }
+      return r;
+    });
+  }
   LS.set(table, allData);
   return allData;
 }
@@ -88,6 +96,11 @@ async function dbUpsert(table, row) {
   const sb = getSB();
   if (!row.created_at) row.created_at = new Date().toISOString();
   row.updated_at = new Date().toISOString();
+  // Normalize field names for Supabase schema
+  if (table === 'rapports') {
+    if (row.sigImg !== undefined) { row.sig_img = row.sigImg; delete row.sigImg; }
+    if (row.savedAt !== undefined) { row.saved_at = row.savedAt; delete row.savedAt; }
+  }
   // Update local cache immediately
   const local = LS.get(table) || [];
   const idx = local.findIndex(r => r.id === row.id);
