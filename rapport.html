@@ -814,100 +814,7 @@ function resetForm(){
 document.getElementById('f-date').value=document.getElementById('f-date').value||new Date().toISOString().split('T')[0];
 addTask();
 renderStepDots(1);
-
-async function init() {
-  // Load ALL data
-  await Promise.all([DB.clients(), DB.machines(), DB.techs(), DB.appels()]);
-
-  // Populate tech dropdown
-  const techs = DB.techsSync();
-  const sel = document.getElementById('f-tech-sel');
-  if(sel && techs.length){
-    sel.innerHTML = '<option value="">— Choisir un technicien —</option>' +
-      techs.filter(t=>t.statut!=="Inactif")
-           .map(t=>'<option value="'+t.prenom+' '+t.nom+'">'+t.prenom+' '+t.nom+'</option>')
-           .join('');
-  }
-
-  const prefillAppelId = localStorage.getItem('bmak_prefill_appel');
-  const prefillCid     = localStorage.getItem('bmak_prefill_client');
-  const resumeDraftId  = localStorage.getItem('bmak_draft_id');
-
-  if (resumeDraftId) {
-    // ── RESUME EXISTING DRAFT ──
-    localStorage.removeItem('bmak_draft_id');
-    const drafts = DB.rapportsSync();
-    const draft = drafts.find(r => r.id === resumeDraftId && r.statut === 'brouillon');
-    if (draft) { await applyDraft(draft); return; }
-  }
-
-  if (prefillAppelId) {
-    // ── OPEN FROM APPEL ──
-    localStorage.removeItem('bmak_prefill_appel');
-    localStorage.removeItem('bmak_prefill_client');
-    const appel = DB.appelsSync().find(a => a.id === prefillAppelId);
-
-    // Check if a brouillon already exists for this appel
-    const existing = DB.rapportsSync().find(r =>
-      r.statut === 'brouillon' && r.appel_id === prefillAppelId
-    );
-
-    if (existing) {
-      // Resume the existing draft
-      await applyDraft(existing);
-    } else {
-      // Create new brouillon from appel data
-      brouillonId = uid();
-      const appelDate = appel && appel.dates && appel.dates[0] !== '0000-00-00'
-        ? appel.dates[0] : (appel ? appel.date : '');
-      
-      // Save initial brouillon first (so it exists in DB)
-      const initDraft = {
-        id: brouillonId,
-        cid: appel ? appel.cid : (prefillCid || ''),
-        mid: appel ? appel.mid : null,
-        tech: appel ? appel.tech : '',
-        date: appelDate || new Date().toISOString().split('T')[0],
-        rnum: appelDate ? 'SR-'+appelDate.replace(/-/g,'').slice(2) : '',
-        taches: [{itype: getItypeFromTitre(appel ? appel.titre : ''),
-                  desc: appel ? (appel.notes || appel.titre || '') : '',
-                  etat:'', reco:'', photos:[]}],
-        statut: 'brouillon',
-        appel_id: prefillAppelId,
-        created_at: new Date().toISOString()
-      };
-      await DB.saveRapport(initDraft);
-
-      // Now apply to the UI
-      await applyDraft(initDraft);
-      localStorage.setItem('bmak_current_draft', brouillonId);
-      localStorage.setItem('bmak_last_appel_id', prefillAppelId);
-    }
-
-  } else if (prefillCid) {
-    // ── OPEN FROM CLIENT ──
-    localStorage.removeItem('bmak_prefill_client');
-    pickClient(prefillCid);
-  }
-
-
-  // Open final rapport for editing from historique
-  const editId = localStorage.getItem('bmak_edit_rapport_id');
-  if(editId){
-    localStorage.removeItem('bmak_edit_rapport_id');
-    const rapport = DB.rapportsSync().find(r=>r.id===editId);
-    if(rapport){
-      brouillonId = rapport.id;
-      await applyDraft(rapport);
-      setTimeout(()=>{
-        const b = document.getElementById('btn-finish');
-        if(b) b.textContent = '💾 Sauvegarder les modifications';
-      }, 300);
-    }
-  }
-}
-
-function getItypeFromTitre(titre) {
+n getItypeFromTitre(titre) {
   const l = (titre||'').toLowerCase();
   if(l.includes('maintenan')||l.includes('préven')) return 'Maintenance préventive';
   if(l.includes('répara')||l.includes('repair')) return 'Réparation';
@@ -962,6 +869,96 @@ async function applyDraft(draft) {
   }
 }
 
+async function init() {
+  // Load all data from Supabase
+  await Promise.all([DB.clients(), DB.machines(), DB.techs(), DB.appels()]);
+
+  // Populate tech dropdown
+  const techs = DB.techsSync();
+  const techSel = document.getElementById('f-tech-sel');
+  if(techSel && techs.length){
+    techSel.innerHTML = '<option value="">— Choisir un technicien —</option>' +
+      techs.filter(t=>t.statut!=="Inactif")
+           .map(t=>'<option value="'+t.prenom+' '+t.nom+'">'+t.prenom+' '+t.nom+'</option>')
+           .join('');
+  }
+
+  // ── CHECK WHAT MODE WE'RE IN ──
+  const prefillAppelId = localStorage.getItem('bmak_prefill_appel');
+  const prefillCid     = localStorage.getItem('bmak_prefill_client');
+  const resumeDraftId  = localStorage.getItem('bmak_draft_id');
+  const editRapportId  = localStorage.getItem('bmak_edit_rapport_id');
+
+  if (resumeDraftId) {
+    // Continue an existing brouillon from historique
+    localStorage.removeItem('bmak_draft_id');
+    await DB.rapports();
+    const draft = DB.rapportsSync().find(r => r.id === resumeDraftId);
+    if (draft) { await applyDraft(draft); }
+
+  } else if (editRapportId) {
+    // Edit a final rapport from historique
+    localStorage.removeItem('bmak_edit_rapport_id');
+    await DB.rapports();
+    const rapport = DB.rapportsSync().find(r => r.id === editRapportId);
+    if (rapport) {
+      brouillonId = rapport.id; // reuse same ID
+      await applyDraft(rapport);
+      setTimeout(() => {
+        const b = document.getElementById('btn-finish');
+        if(b) b.textContent = '💾 Sauvegarder les modifications';
+      }, 300);
+    }
+
+  } else if (prefillAppelId) {
+    // Open from appel de service
+    localStorage.removeItem('bmak_prefill_appel');
+    localStorage.removeItem('bmak_prefill_client');
+
+    const appel = DB.appelsSync().find(a => a.id === prefillAppelId);
+
+    // Check if a brouillon already exists for this appel
+    await DB.rapports();
+    const existing = DB.rapportsSync().find(r =>
+      r.statut === 'brouillon' && r.appel_id === prefillAppelId
+    );
+
+    if (existing) {
+      // Resume existing draft
+      await applyDraft(existing);
+    } else {
+      // Create new draft from appel
+      brouillonId = uid();
+      const appelDate = appel && appel.dates && appel.dates.length && appel.dates[0] !== '0000-00-00'
+        ? appel.dates[0] : (appel ? appel.date : '');
+
+      const itype = getItypeFromTitre(appel ? appel.titre : '');
+      const initDraft = {
+        id: brouillonId,
+        cid: appel ? appel.cid : (prefillCid || ''),
+        mid: appel ? (appel.mid || null) : null,
+        tech: appel ? (appel.tech || '') : '',
+        date: (appelDate && appelDate !== '0000-00-00') ? appelDate : new Date().toISOString().split('T')[0],
+        rnum: (appelDate && appelDate !== '0000-00-00') ? 'SR-'+appelDate.replace(/-/g,'').slice(2) : '',
+        taches: [{ itype, desc: appel ? (appel.notes || appel.titre || '') : '', etat:'', reco:'', photos:[] }],
+        statut: 'brouillon',
+        appel_id: prefillAppelId,
+        created_at: new Date().toISOString()
+      };
+      await DB.saveRapport(initDraft);
+      localStorage.setItem('bmak_last_appel_id', prefillAppelId);
+      await applyDraft(initDraft);
+    }
+
+  } else if (prefillCid) {
+    // Open from client page
+    localStorage.removeItem('bmak_prefill_client');
+    pickClient(prefillCid);
+  }
+}
+init();
+
+
 }
 init();
 
@@ -971,24 +968,5 @@ init();
 if('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
 }
-</script>
-<script>
-// Force reload if db.js is cached old version
-setTimeout(function() {
-  if (typeof DB_VERSION === 'undefined' || DB_VERSION < 27) {
-    // Prevent infinite reload loop
-    var reloadCount = parseInt(sessionStorage.getItem('reloadCount') || '0');
-    if (reloadCount < 2) {
-      sessionStorage.setItem('reloadCount', reloadCount + 1);
-      console.warn('Old db.js, reloading... attempt', reloadCount + 1);
-      window.location.reload(true);
-    } else {
-      sessionStorage.removeItem('reloadCount');
-      console.warn('db.js version mismatch but stopping reload loop');
-    }
-  } else {
-    sessionStorage.removeItem('reloadCount');
-  }
-}, 1000);
 </script>
 </body></html>
