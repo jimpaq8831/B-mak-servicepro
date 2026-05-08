@@ -181,6 +181,11 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
     doc.text('Document confidentiel / Confidential', W-margin, 275.5, {align:'right'});
   }
 
+  const filename = 'Rapport_BMak_'+(c.nom||'client').replace(/[^a-zA-Z0-9]/g,'_')+'_'+date+'.pdf';
+  doc.save(filename);
+}
+  </script>
+
   </script>
 </head><body>
 <script>
