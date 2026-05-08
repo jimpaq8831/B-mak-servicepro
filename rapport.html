@@ -607,6 +607,10 @@ async function loadDraft(id) {
     for(let i=0;i<ts.options.length;i++){if(ts.options[i].value===draft.tech){ts.selectedIndex=i;break;}}
   }
   if (draft.date) document.getElementById('f-date').value = draft.date;
+  const rnumVal = draft.rnum || genNextRnum();
+  document.getElementById('f-rnum').value = rnumVal;
+  D.rnum = rnumVal;
+
   if (draft.rnum) document.getElementById('f-rnum').value = draft.rnum;
   
   // Step 4: Restore time
@@ -691,7 +695,9 @@ async function applyDraft(draft) {
     }
   }
   if (draft.date) document.getElementById('f-date').value = draft.date;
-  const rnumVal = draft.rnum || genNextRnum(); document.getElementById('f-rnum').value = rnumVal; D.rnum = rnumVal;
+  const rnumVal = draft.rnum || genNextRnum();
+  document.getElementById('f-rnum').value = rnumVal;
+  D.rnum = rnumVal;
 
   // 3. Time
   if (draft.tstart){ const [h,m]=draft.tstart.split(':'); TW.sh=parseInt(h)||8; TW.sm=parseInt(m)||0; }
