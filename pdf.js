@@ -14,7 +14,7 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
   const m = selMachineOverride || (r.mid ? DB.machineById(r.mid) : null);
   const sigImg = savedSigImgOverride || r.sigImg || r.sig_img || null;
   const tech = r.tech || '—';
-  const rnum = r.rnum || ('SR-'+(r.date||'').replace(/-/g,'').slice(2)) || '—';
+  const rnum = (r.rnum && r.rnum.length < 20) ? r.rnum : ('SR-'+(r.date||'').replace(/-/g,'').slice(2)||'—');
   const dur  = r.dur  || '—';
   const date = r.date || '—';
 
