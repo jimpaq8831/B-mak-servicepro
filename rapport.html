@@ -375,7 +375,7 @@ function renderStepDots(n){
 function goStep(n){
   // Auto-save draft when navigating (not on final step 5)
   if (selClient && n > 1 && n < 5 && !savedSigImg) saveDraft();
-  [1,2,3,4].forEach(i=>{const el=document.getElementById('s'+i);if(el)el.style.display=i===n?'block':'none';});
+  [1,2,3,4,5].forEach(i=>{const el=document.getElementById('s'+i);if(el)el.style.display=i===n?'block':'none';});
   curStep=n;
   renderStepDots(n);
   document.getElementById('hdr-title').textContent=['','Client & Infos','Tâches','Signature','Révision',''][n]||'Rapport';
