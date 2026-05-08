@@ -224,6 +224,12 @@ document.getElementById('search').addEventListener('input', function(){ curSearc
 async function init() {
   await Promise.all([DB.clients(), DB.machines(), DB.rapports()]);
   setFilter('all');
+  // Check if we should open a specific rapport
+  const openId = localStorage.getItem('bmak_open_rapport_id');
+  if (openId) {
+    localStorage.removeItem('bmak_open_rapport_id');
+    setTimeout(() => showDetail(openId), 300);
+  }
 }
 init();
 </script>
