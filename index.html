@@ -126,7 +126,7 @@ async function init() {
     const c=DB.clientById(r.cid);
     const etat=r.taches&&r.taches[0]?r.taches[0].etat:'';
     const s=statusSty(etat);
-    return '<div class="rapport-card" style="cursor:pointer" onclick="window.location.href=\'../historique.html\'">'+
+    return '<div class="rapport-card" style="cursor:pointer" onclick="window.location.href=\'./historique.html\'">'+
       '<div class="rapport-date">'+fmtDate(r.date)+' · '+r.tech+'</div>'+
       '<div class="rapport-title">'+(c?c.nom:'—')+'</div>'+
       '<div class="rapport-sub">'+(r.taches?r.taches.length+' tâche(s)':'')+(etat?' · <span style="color:'+s.color+'">'+etat+'</span>':'')+'</div>'+
