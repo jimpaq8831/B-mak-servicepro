@@ -154,39 +154,31 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
     y += 4;
   });
 
-  // ── Signature ──
-  if(y > 210) { doc.addPage(); y = 18; }
-  doc.setFillColor(...C.gray); doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
-  doc.roundedRect(margin, y, W-margin*2, 46, 2, 2, 'FD');
-  doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(...C.teal);
-  doc.text('SIGNATURE CLIENT / CLIENT SIGNATURE', margin+4, y+7);
-  if(r.signer) {
-    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...C.text3);
-    doc.text('Signé par: '+r.signer, margin+4, y+13);
-  }
-  if(sigImg) {
-    try {
-      const fmt = sigImg.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
-      doc.addImage(sigImg, fmt, margin+4, y+15, 68, 24);
-    } catch(e) { console.warn('Signature image error:', e); }
-  }
-  doc.setDrawColor(...C.border); doc.setLineWidth(0.4);
-  doc.line(W-margin-60, y+36, W-margin-4, y+36);
-  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...C.navy);
-  doc.text(tech, W-margin-4, y+33, {align:'right'});
-  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...C.text3);
-  doc.text('Technicien', W-margin-4, y+42, {align:'right'});
-
-  // ── Footer ──
-  doc.setFillColor(...C.navy); doc.rect(0, 270, W, 9.4, 'F');
-  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(160,175,190);
-  doc.text('B-Mak ServicePro · '+rnum+' · '+new Date().toLocaleDateString('fr-CA'), margin, 275.5);
-  doc.setTextColor(...C.teal);
-  doc.text('Document confidentiel / Confidential', W-margin, 275.5, {align:'right'});
-
-  const filename = 'Rapport_BMak_'+(c.nom||'client').replace(/[^a-zA-Z0-9]/g,'_')+'_'+date+'.pdf';
-  doc.save(filename);
-}
+  // ── Sign-off ──
+    if(y > 240) { doc.addPage(); y = 18; }
+    doc.setFillColor(...C.gray); doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
+    doc.roundedRect(margin, y, W-margin*2, 22, 2, 2, 'FD');
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(...C.teal);
+    doc.text('RAPPORT COMPLÉTÉ PAR / COMPLETED BY', margin+4, y+7);
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...C.navy);
+    doc.text(tech, W-margin-4, y+14, {align:'right'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...C.text3);
+    doc.text('Technicien / Technician', W-margin-4, y+20, {align:'right'});
+    doc.setDrawColor(...C.border); doc.setLineWidth(0.4);
+    doc.line(W-margin-60, y+16, W-margin-4, y+16);
+    y += 28;
+    // ── Footer on all pages ──
+    const totalPages = doc.getNumberOfPages();
+    for(let p=1; p<=totalPages; p++) {
+      doc.setPage(p);
+      doc.setFillColor(...C.navy); doc.rect(0, 270, W, 9.4, 'F');
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(160,175,190);
+      doc.text('B-Mak ServicePro · '+rnum+' · '+new Date().toLocaleDateString('fr-CA'), margin, 275.5);
+      doc.setTextColor(...C.teal);
+      doc.text('Page '+p+'/'+totalPages, W/2, 275.5, {align:'center'});
+      doc.setTextColor(160,175,190);
+      doc.text('Document confidentiel / Confidential', W-margin, 275.5, {align:'right'});
+    }
 
   </script>
 </head><body>
