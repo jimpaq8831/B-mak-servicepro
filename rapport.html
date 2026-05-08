@@ -34,7 +34,7 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
   const m = selMachineOverride || (r.mid ? DB.machineById(r.mid) : null);
   const sigImg = savedSigImgOverride || r.sigImg || r.sig_img || null;
   const tech = r.tech || '—';
-  const rnum = (r.rnum && r.rnum.length < 20) ? r.rnum : ('SR-'+(r.date||'').replace(/-/g,'').slice(2)||'—');
+  const rnum = (r.rnum && r.rnum.length < 20) ? r.rnum : '—';
   const dur  = r.dur  || '—';
   const date = r.date || '—';
 
@@ -575,12 +575,23 @@ function calcTime(){
 }
 twUpdate();
 
+// GENERATE NEXT SEQUENTIAL REPORT NUMBER
+function genNextRnum(){
+  const rapports = DB.rapportsSync();
+  const nums = rapports.map(r => {
+    const m = (r.rnum||'').match(/SR-0*(\d+)/);
+    return m ? parseInt(m[1]) : 0;
+  });
+  const next = Math.max(0, ...nums) + 1;
+  return 'SR-' + String(next).padStart(4, '0');
+}
+
 // VALIDATION
 document.getElementById('btn-s1').addEventListener('click',function(){
   if(!selClient){alert('Veuillez sélectionner un client.');return;}
   D.tech=document.getElementById('f-tech').value.trim();
   D.date=document.getElementById('f-date').value;
-  D.rnum=document.getElementById('f-rnum').value.trim()||'SR-'+(D.date?D.date.replace(/-/g,'').slice(2):Date.now().toString().slice(-6));
+  D.rnum=document.getElementById('f-rnum').value.trim()||genNextRnum();
   if(!D.tech){alert('Veuillez entrer votre nom.');return;}
   if(!D.date){alert('Veuillez entrer la date.');return;}
   goStep(2);
