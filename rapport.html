@@ -464,6 +464,7 @@ function renderTasks(){
 }
 function triggerPhoto(tid){document.getElementById('ph_'+tid).click();}
 function viewPhoto(src){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer';const i=document.createElement('img');i.src=src;i.style.cssText='max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px';o.appendChild(i);o.onclick=()=>document.body.removeChild(o);document.body.appendChild(o);}
+function viewPhoto(src){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer';const i=document.createElement('img');i.src=src;i.style.cssText='max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px';o.appendChild(i);o.onclick=()=>document.body.removeChild(o);document.body.appendChild(o);}
 function delPhoto(tid,pi){const t=tasks.find(t=>t.id===tid);if(t){t.photos.splice(pi,1);renderTasks();}}
 
 // CLIENT SEARCH
