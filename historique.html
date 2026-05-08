@@ -48,11 +48,11 @@
 </div></div>
 
 <nav class="nav">
-  <a href="./index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
-  <a href="./clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
-  <a href="./rapport.html" class="nav-item"><span class="nav-icon">📋</span>Rapport</a>
-  <a href="./techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
-  <a href="./calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
+  <a href="./index.html" class="nav-item "><span class="nav-icon">🏠</span>Accueil</a>
+  <a href="./clients.html" class="nav-item "><span class="nav-icon">🏭</span>Clients</a>
+  <a href="./rapport.html" class="nav-item "><span class="nav-icon">📋</span>Rapport</a>
+  <a href="./techniciens.html" class="nav-item "><span class="nav-icon">👷</span>Techs</a>
+  <a href="./calendrier.html" class="nav-item "><span class="nav-icon">📅</span>Agenda</a>
 </nav>
 
 <script>
@@ -348,7 +348,11 @@ function showDetail(id){
       '<div style="font-size:14px;color:var(--navy);margin-bottom:6px">'+(t.desc||'')+'</div>' +
       (t.etat?'<span class="badge" style="background:'+s.bg+';color:'+s.color+';border:1px solid '+s.border+'">'+t.etat+'</span>':'')+
       (t.reco?'<div style="font-size:13px;color:var(--text3);margin-top:6px">💡 '+t.reco+'</div>':'')+
-      (pCount?'<div style="font-size:12px;color:var(--teal);margin-top:4px;font-weight:600">📷 '+pCount+'</div>':'')+
+      (pCount?'<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">'+
+        (Array.isArray(t.photos)?t.photos:[]).map(src=>
+          '<img src="'+src+'" onclick="viewPhoto(\''+src+'\')" style="width:70px;height:70px;object-fit:cover;border-radius:6px;cursor:pointer">'
+        ).join('')+
+        '</div>':'')+
       '</div>';
   });
 
@@ -364,6 +368,14 @@ function editRapport(id){
   // Open rapport for editing (keeps statut as final)
   localStorage.setItem('bmak_edit_rapport_id', id);
   location.href = './rapport.html';
+}
+
+function viewPhoto(src){
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer';
+  overlay.innerHTML='<img src="'+src+'" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px"><button style="position:fixed;top:16px;right:16px;background:rgba(255,255,255,0.2);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer">✕</button>';
+  overlay.onclick=()=>document.body.removeChild(overlay);
+  document.body.appendChild(overlay);
 }
 
 function regenPDF(id){

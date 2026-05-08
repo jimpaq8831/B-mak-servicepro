@@ -26,8 +26,12 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
   doc.setTextColor(180,190,200);
   doc.text('RAPPORT DE SERVICE  /  SERVICE REPORT', margin+50, 20);
   doc.setTextColor(255,255,255); doc.setFontSize(9);
-  doc.text('No: '+rnum, W-margin, 18, {align:'right'});
-  doc.text(fmtDate(date), W-margin, 25, {align:'right'});
+  doc.text('No: '+rnum, W-margin, 17, {align:'right'});
+  doc.text(fmtDate(date), W-margin, 24, {align:'right'});
+  doc.setFontSize(7); doc.setTextColor(130,160,180);
+  doc.text('bmak.ca', W-margin, 31, {align:'right'});
+  // Decorative teal accent line
+  doc.setFillColor(...C.teal); doc.rect(0, 38, W, 1.5, 'F');
   y = 46;
 
   // ── Client box ──
@@ -117,52 +121,55 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
     const photos = Array.isArray(t.photos) ? t.photos : [];
     if(photos.length) {
       if(y > 200) { doc.addPage(); y = 18; }
-      const iw = (W-margin*2-6)/2, ih = 44;
-      photos.slice(0,6).forEach((src, pi) => {
-        const col = pi%2, row = Math.floor(pi/2);
-        const px = margin+col*(iw+6), py = y+row*(ih+6);
-        if(py+ih > 265) { doc.addPage(); y = 18; }
+      const cols = 3, iw = (W-margin*2-cols*4)/cols, ih = 40;
+      photos.slice(0,9).forEach((src, pi) => {
+        if(pi % cols === 0 && pi > 0) y += ih + 5;
+        if(y + ih > 262) { doc.addPage(); y = 18; }
+        const col = pi % cols;
+        const px = margin + col*(iw+4);
         try {
           const fmt = src.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
-          doc.addImage(src, fmt, px, py, iw, ih, '', 'MEDIUM');
+          doc.addImage(src, fmt, px, y, iw, ih, '', 'MEDIUM');
           doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
-          doc.rect(px, py, iw, ih, 'S');
+          doc.rect(px, y, iw, ih, 'S');
+          // Photo number
+          doc.setFillColor(0,0,0,0.5); 
+          doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(150,150,150);
+          doc.text('Photo '+(pi+1), px+2, y+ih-2);
         } catch(e) {}
       });
-      y += Math.ceil(Math.min(photos.length,6)/2)*(ih+6)+6;
+      const rows = Math.ceil(Math.min(photos.length,9)/cols);
+      y += rows*(ih+5)+4;
     }
     y += 4;
   });
 
-  // ── Signature ──
-  if(y > 210) { doc.addPage(); y = 18; }
+  // ── Technicien sign-off ──
+  if(y > 240) { doc.addPage(); y = 18; }
   doc.setFillColor(...C.gray); doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
-  doc.roundedRect(margin, y, W-margin*2, 46, 2, 2, 'FD');
+  doc.roundedRect(margin, y, W-margin*2, 22, 2, 2, 'FD');
   doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(...C.teal);
-  doc.text('SIGNATURE CLIENT / CLIENT SIGNATURE', margin+4, y+7);
-  if(r.signer) {
-    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...C.text3);
-    doc.text('Signé par: '+r.signer, margin+4, y+13);
-  }
-  if(sigImg) {
-    try {
-      const fmt = sigImg.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
-      doc.addImage(sigImg, fmt, margin+4, y+15, 68, 24);
-    } catch(e) { console.warn('Signature image error:', e); }
-  }
+  doc.text('RAPPORT COMPLÉTÉ PAR / COMPLETED BY', margin+4, y+7);
   doc.setDrawColor(...C.border); doc.setLineWidth(0.4);
-  doc.line(W-margin-60, y+36, W-margin-4, y+36);
-  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...C.navy);
-  doc.text(tech, W-margin-4, y+33, {align:'right'});
+  doc.line(W-margin-60, y+16, W-margin-4, y+16);
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...C.navy);
+  doc.text(tech, W-margin-4, y+13, {align:'right'});
   doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...C.text3);
-  doc.text('Technicien', W-margin-4, y+42, {align:'right'});
+  doc.text('Technicien / Technician', W-margin-4, y+20, {align:'right'});
+  y += 28;
 
-  // ── Footer ──
-  doc.setFillColor(...C.navy); doc.rect(0, 270, W, 9.4, 'F');
-  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(160,175,190);
-  doc.text('B-Mak ServicePro · '+rnum+' · '+new Date().toLocaleDateString('fr-CA'), margin, 275.5);
-  doc.setTextColor(...C.teal);
-  doc.text('Document confidentiel / Confidential', W-margin, 275.5, {align:'right'});
+  // ── Footer on all pages ──
+  const totalPages = doc.getNumberOfPages();
+  for(let p=1; p<=totalPages; p++) {
+    doc.setPage(p);
+    doc.setFillColor(...C.navy); doc.rect(0, 270, W, 9.4, 'F');
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(160,175,190);
+    doc.text('B-Mak ServicePro · '+rnum+' · '+new Date().toLocaleDateString('fr-CA'), margin, 275.5);
+    doc.setTextColor(...C.teal);
+    doc.text('Page '+p+'/'+totalPages, W/2, 275.5, {align:'center'});
+    doc.setTextColor(160,175,190);
+    doc.text('Document confidentiel / Confidential', W-margin, 275.5, {align:'right'});
+  }
 
   const filename = 'Rapport_BMak_'+(c.nom||'client').replace(/[^a-zA-Z0-9]/g,'_')+'_'+date+'.pdf';
   doc.save(filename);
