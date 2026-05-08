@@ -415,7 +415,7 @@ document.getElementById('btn-s1').addEventListener('click',function(){
   if(!selClient){alert('Veuillez sélectionner un client.');return;}
   D.tech=document.getElementById('f-tech').value.trim();
   D.date=document.getElementById('f-date').value;
-  D.rnum=document.getElementById('f-rnum').value.trim()||'SR-'+Date.now().toString().slice(-6);
+  D.rnum=document.getElementById('f-rnum').value.trim()||'SR-'+(D.date?D.date.replace(/-/g,'').slice(2):''+Date.now().toString().slice(-6));
   if(!D.tech){alert('Veuillez entrer votre nom.');return;}
   if(!D.date){alert('Veuillez entrer la date.');return;}
   goStep(2);
