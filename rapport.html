@@ -434,6 +434,12 @@ document.getElementById('btn-s2').addEventListener('click',function(){
   if(tasks.some(t=>!t.desc.trim())){alert('Chaque tâche doit avoir une description.');return;}
   D.tstart=document.getElementById('f-start').value;
   D.tend=document.getElementById('f-end').value;
+  // Ensure rnum, tech, date are captured even if user skipped step 1
+  if(!D.rnum) D.rnum = document.getElementById('f-rnum').value.trim() || genNextRnum();
+  if(!D.tech) D.tech = document.getElementById('f-tech').value.trim();
+  if(!D.date) D.date = document.getElementById('f-date').value;
+  // Update the rnum field so user can see it
+  if(D.rnum) document.getElementById('f-rnum').value = D.rnum;
   goStep(4);
 });
 // signature step removed - btn-s3 no longer exists
@@ -462,6 +468,23 @@ function fillReview(){
 }
 
 // PDF GENERATION
+function genPDF() {
+  // Re-download PDF for last saved rapport (used on success screen)
+  try {
+    const r = {
+      taches: tasks,
+      signer: D.signer,
+      rnum: D.rnum,
+      dur: D.dur,
+      date: D.date,
+      tech: D.tech,
+      cid: selClient ? selClient.id : null,
+      mid: selMachine ? selMachine.id : null
+    };
+    buildReportPDF(r, selClient, selMachine, savedSigImg);
+  } catch(e) { alert('Erreur PDF: ' + e.message); }
+}
+
 async function genPDFOnly() {
   // Just generate PDF without finishing the rapport
   if(!selClient){ alert('Veuillez sélectionner un client.'); return; }
