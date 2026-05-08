@@ -691,7 +691,7 @@ async function applyDraft(draft) {
     }
   }
   if (draft.date) document.getElementById('f-date').value = draft.date;
-  if (draft.rnum) document.getElementById('f-rnum').value = draft.rnum;
+  const rnumVal = draft.rnum || genNextRnum(); document.getElementById('f-rnum').value = rnumVal; D.rnum = rnumVal;
 
   // 3. Time
   if (draft.tstart){ const [h,m]=draft.tstart.split(':'); TW.sh=parseInt(h)||8; TW.sm=parseInt(m)||0; }
