@@ -680,7 +680,7 @@ async function finishRapport(btn){
       created_at: new Date().toISOString()
     });
   } else {
-    // Update existing appel status to Terminé
+    // Update existing appel status to Terminé 
     const appels = DB.appelsSync();
     const appel = appels.find(a => a.id === prefillAppelId);
     if (appel) {
