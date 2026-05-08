@@ -492,7 +492,7 @@ async function finishRapport(btn){
   if(btn){btn.textContent='⏳ Génération...';btn.disabled=true;}
   // PDF generated separately via 'Générer PDF' button
   // Save to history
-  const rapport={id:uid(),cid:selClient.id,mid:selMachine?selMachine.id:null,tech:D.tech,date:D.date,rnum:D.rnum,dur:D.dur,tstart:D.tstart,tend:D.tend,taches:tasks.map(t=>({itype:t.itype,desc:t.desc,etat:t.etat,reco:t.reco,photos:t.photos})),signer:D.signer,savedAt:new Date().toISOString()};
+  if(!D.rnum)D.rnum=document.getElementById('f-rnum').value.trim()||genNextRnum();   const rapport={id:uid(),cid:selClient.id,mid:selMachine?selMachine.id:null,tech:D.tech,date:D.date,rnum:D.rnum,dur:D.dur,tstart:D.tstart,tend:D.tend,taches:tasks.map(t=>({itype:t.itype,desc:t.desc,etat:t.etat,reco:t.reco,photos:t.photos})),signer:D.signer,savedAt:new Date().toISOString()};
   // If this was a draft, give it the same ID to overwrite
   if (brouillonId) rapport.id = brouillonId;
   rapport.statut = 'final';
