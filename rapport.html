@@ -205,16 +205,15 @@ if ('serviceWorker' in navigator) {
   <div class="hdr-logo">B-Mak</div>
   <div class="hdr-title" id="hdr-title">Nouveau rapport</div>
   <span id="draft-indicator" style="font-size:11px;color:var(--teal);opacity:0;transition:opacity .5s">✓ Brouillon sauvegardé</span>
-  <a href="./index.html" class="hdr-back" onclick="saveDraft()">💾 Sauvegarder &amp; Quitter</a>
+  <a href="./index.html" class="hdr-back" onclick="saveDraft()">✕ Quitter</a>
 </div>
 
 <div class="main" id="form-main">
   <!-- STEP INDICATORS -->
-  <div class="steps" id="steps" style="display:flex;align-items:flex-start;justify-content:center;gap:0;margin-bottom:20px;padding:0 10px"></div>
+  <div class="steps" id="steps"></div>
 
   <!-- STEP 1: CLIENT + DATE -->
   <div id="s1">
-    <div style="font-size:12px;color:var(--text3);margin-bottom:4px">Étape 1 sur 3</div>
     <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:4px">Client &amp; Infos générales</div>
     <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Sélectionner le client, la machine et la date</div>
 
@@ -307,7 +306,7 @@ if ('serviceWorker' in navigator) {
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-out" onclick="goStep(1)">← Retour</button>
+      <button class="btn btn-out" onclick="goStep(1)">←</button>
       <button class="btn btn-primary" id="btn-s2">Suivant →</button>
     </div>
   </div>
@@ -331,10 +330,10 @@ if ('serviceWorker' in navigator) {
       <div id="rev-tasks" style="font-size:14px;color:var(--navy)"></div>
     </div>
 
-    <button class="btn btn-primary" id="btn-finish" onclick="finishRapport(this)" style="margin-bottom:12px;font-size:16px">✅ Terminer le rapport</button>
-    <div class="btn-row" style="gap:10px">
-      <button class="btn btn-out" onclick="goStep(2)" style="flex:0 0 auto;padding:12px 20px">← Retour</button>
-      <button class="btn btn-out" id="btn-pdf" onclick="genPDFOnly()" style="flex:1">📄 Générer le PDF</button>
+    <button class="btn btn-primary" id="btn-finish" onclick="finishRapport(this)" style="margin-bottom:10px">✅ Terminer le rapport</button>
+    <button class="btn btn-out" id="btn-pdf" onclick="genPDFOnly()" style="margin-bottom:10px">📄 Générer le PDF seulement</button>
+    <div class="btn-row" style="margin-top:4px">
+      <button class="btn btn-out" onclick="goStep(4)">← Retour</button>
     </div>
   </div>
 
@@ -350,11 +349,11 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <nav class="nav">
-  <a href="./index.html" class="nav-item "><span class="nav-icon">🏠</span>Accueil</a>
-  <a href="./clients.html" class="nav-item "><span class="nav-icon">🏭</span>Clients</a>
+  <a href="./index.html" class="nav-item"><span class="nav-icon">🏠</span>Accueil</a>
+  <a href="./clients.html" class="nav-item"><span class="nav-icon">🏭</span>Clients</a>
   <a href="./rapport.html" class="nav-item active"><span class="nav-icon">📋</span>Rapport</a>
-  <a href="./techniciens.html" class="nav-item "><span class="nav-icon">👷</span>Techs</a>
-  <a href="./calendrier.html" class="nav-item "><span class="nav-icon">📅</span>Agenda</a>
+  <a href="./techniciens.html" class="nav-item"><span class="nav-icon">👷</span>Techs</a>
+  <a href="./calendrier.html" class="nav-item"><span class="nav-icon">📅</span>Agenda</a>
 </nav>
 
 
@@ -364,13 +363,7 @@ const D={tech:'',date:'',rnum:'',tstart:'',tend:'',dur:'',signer:''};
 
 // STEPS
 function renderStepDots(n){
-  const labels = ['','Client','Tâches','Révision','✓'];
-  document.getElementById('steps').innerHTML=[1,2,3,4].map(i=>
-    '<div class="step-dot'+(i<n?' done':(i===n?' active':''))+'" style="display:flex;flex-direction:column;align-items:center;gap:2px">'+
-      '<div style="width:24px;height:24px;border-radius:50%;background:'+(i<n?'var(--teal)':(i===n?'var(--navy)':'var(--border)'))+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">'+(i<n?'✓':i)+'</div>'+
-      '<div style="font-size:9px;color:'+(i===n?'var(--navy)':'var(--text3)')+';">'+(labels[i]||'')+'</div>'+
-    '</div>'
-  ).join('<div style="flex:1;height:2px;background:'+(n>1?'var(--teal)':'var(--border)')+';margin-top:12px;max-width:30px"></div>');
+  document.getElementById('steps').innerHTML=[1,2,3,4].map(i=>'<div class="step-dot'+(i<=n?' done':'')+'"></div>').join('');
 }
 function goStep(n){
   // Auto-save draft when navigating (not on final step 5)
@@ -571,9 +564,11 @@ document.getElementById('btn-s2').addEventListener('click',function(){
   D.tend=document.getElementById('f-end').value;
   goStep(4);
 });
-// signature step removed - btn-s3 no longer exists
-const _btnS3 = document.getElementById('btn-s3');
-if(_btnS3) _btnS3.addEventListener('click', function(){ goStep(4); });
+document.getElementById('btn-s3').addEventListener('click',function(){
+  D.signer=document.getElementById('f-signer').value.trim();
+  if(sigDots<4){alert('Veuillez obtenir la signature du client.');return;}
+  goStep(4);
+});
 
 // SIGNATURE
 function initSig(){
@@ -767,7 +762,7 @@ async function loadDraft(id) {
 setInterval(() => { if (selClient && curStep > 1) saveDraft(); }, 300000);
 
 function resetForm(){
-  selClient=null;selMachine=null;tasks=[];sigDots=0;brouillonId=null;
+  selClient=null;selMachine=null;tasks=[];sigDots=0;savedSigImg=null;brouillonId=null;
   localStorage.removeItem('bmak_last_appel_id');
   localStorage.removeItem('bmak_draft_id');
   localStorage.removeItem('bmak_current_draft');
@@ -781,7 +776,7 @@ function resetForm(){
   document.getElementById('f-rnum').value='';
   TW.sh=8;TW.sm=0;TW.eh=17;TW.em=0;twUpdate();
   document.getElementById('f-dur').textContent='—';
-  const signerEl=document.getElementById('f-signer'); if(signerEl) signerEl.value='';
+  document.getElementById('f-signer').value='';
   addTask();goStep(1);
 }
 
@@ -867,7 +862,7 @@ async function applyDraft(draft) {
 
 async function init() {
   // Load all data from Supabase
-  await Promise.all([DB.clients(), DB.machines(), DB.techs(), DB.appels(), DB.rapports()]);
+  await Promise.all([DB.clients(), DB.machines(), DB.techs(), DB.appels()]);
 
   // Populate tech dropdown
   const techs = DB.techsSync();
