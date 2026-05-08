@@ -62,7 +62,7 @@ if ('serviceWorker' in navigator) {
         <div style="font-size:13px;font-weight:700;color:var(--navy)">Clients</div>
       </div>
     </a>
-    <a href="./historique.html" style="text-decoration:none">
+    <a href="../historique.html" style="text-decoration:none">
       <div class="card" style="text-align:center;padding:20px 10px;cursor:pointer">
         <div style="font-size:30px;margin-bottom:6px">📁</div>
         <div style="font-size:13px;font-weight:700;color:var(--navy)">Historique</div>
@@ -126,7 +126,7 @@ async function init() {
     const c=DB.clientById(r.cid);
     const etat=r.taches&&r.taches[0]?r.taches[0].etat:'';
     const s=statusSty(etat);
-    return '<div class="rapport-card" style="cursor:pointer" onclick="window.location.href=\"/historique.html\"">'+
+    return '<div class="rapport-card" style="cursor:pointer" onclick="window.location.href='../historique.html'">'+
       '<div class="rapport-date">'+fmtDate(r.date)+' · '+r.tech+'</div>'+
       '<div class="rapport-title">'+(c?c.nom:'—')+'</div>'+
       '<div class="rapport-sub">'+(r.taches?r.taches.length+' tâche(s)':'')+(etat?' · <span style="color:'+s.color+'">'+etat+'</span>':'')+'</div>'+
