@@ -223,7 +223,7 @@ function goStep(n){
     }
   }
   if(n===4)fillReview();
-  if(n===5)setTimeout(()=>location.href='./index.html',2500);
+  if(n===5&&!document.getElementById('btn-finish')?.textContent?.includes('Sauvegarder'))setTimeout(()=>location.href='./index.html',2500);
 }
 
 // AUTO TASK: start with one
@@ -457,7 +457,7 @@ function clearSig(){if(sigCtx)sigCtx.clearRect(0,0,sigCtx.canvas.width,sigCtx.ca
 // REVIEW
 function fillReview(){
   document.getElementById('rev-client').innerHTML='<strong>'+selClient.nom+'</strong> — '+selClient.ville+', '+selClient.province+(selMachine?'<br>Machine : '+selMachine.type+' · '+selMachine.marque+' · S/N: '+(selMachine.serial||'—'):'');
-  document.getElementById('rev-tech').textContent=D.tech+' · '+fmtDate(D.date)+(D.dur?' · '+D.dur:'');
+  document.getElementById('rev-tech').textContent=D.tech+' · '+fmtDate(D.date)+(D.dur?' · '+D.dur:'')+(D.rnum?' · No. '+D.rnum:'');
   document.getElementById('rev-tasks').innerHTML=tasks.map((t,i)=>'<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border)"><strong>Tâche '+(i+1)+'</strong>'+(t.itype?' — '+t.itype:'')+': '+t.desc.slice(0,80)+(t.desc.length>80?'…':'')+(t.etat?'<br><span style="color:'+statusSty(t.etat).color+'">'+t.etat+'</span>':'')+(t.photos.length?' · '+t.photos.length+' photo(s)':'')+'</div>').join('');
 }
 
@@ -800,7 +800,7 @@ async function init() {
         mid: appel ? (appel.mid || null) : null,
         tech: appel ? (appel.tech || '') : '',
         date: (appelDate && appelDate !== '0000-00-00') ? appelDate : new Date().toISOString().split('T')[0],
-        rnum: (appelDate && appelDate !== '0000-00-00') ? 'SR-'+appelDate.replace(/-/g,'').slice(2) : '',
+        rnum: '',
         taches: [{ itype, desc: appel ? (appel.notes || appel.titre || '') : '', etat:'', reco:'', photos:[] }],
         statut: 'brouillon',
         appel_id: prefillAppelId,
