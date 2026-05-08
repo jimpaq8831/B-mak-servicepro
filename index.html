@@ -127,16 +127,19 @@ async function init() {
   // Derniers rapports
   const elR=document.getElementById('rapports-recent');
   if(!rapports.length){elR.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-txt">Aucun rapport enregistré</div></div>';}
-  else{elR.innerHTML=rapports.slice(0,3).map(r=>{
-    const c=DB.clientById(r.cid);
-    const etat=r.taches&&r.taches[0]?r.taches[0].etat:'';
-    const s=statusSty(etat);
-    return '<div class="rapport-card" style="cursor:pointer" onclick="openRapport('"+r.id+"')">'+
-      '<div class="rapport-date">'+fmtDate(r.date)+' · '+r.tech+'</div>'+
-      '<div class="rapport-title">'+(c?c.nom:'—')+'</div>'+
-      '<div class="rapport-sub">'+(r.taches?r.taches.length+' tâche(s)':'')+(etat?' · <span style="color:'+s.color+'">'+etat+'</span>':'')+'</div>'+
-      '</div>';
-  }).join('');}
+  else{
+    elR.innerHTML=rapports.slice(0,3).map(r=>{
+      const c=DB.clientById(r.cid);
+      const etat=r.taches&&r.taches[0]?r.taches[0].etat:'';
+      const s=statusSty(etat);
+      let h='<div class="rapport-card" style="cursor:pointer" data-rid="'+r.id+'" onclick="openRapport(this.getAttribute(&quot;data-rid&quot;))">';
+      h+='<div class="rapport-date">'+fmtDate(r.date)+' · '+r.tech+'</div>';
+      h+='<div class="rapport-title">'+(c?c.nom:'—')+'</div>';
+      h+='<div class="rapport-sub">'+(r.taches?r.taches.length+' tâche(s)':'')+(etat?' · <span style="color:'+s.color+'">'+etat+'</span>':'')+'</div>';
+      h+='</div>';
+      return h;
+    }).join('');
+  }
 }
 </script>
 
