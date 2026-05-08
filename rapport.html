@@ -188,7 +188,7 @@ if ('serviceWorker' in navigator) {
 
 
 <script>
-let curStep=1, selClient=null, selMachine=null, tasks=[], sigDots=0, sigCtx=null, savedSigImg=null, brouillonId=null;
+let curStep=1, selClient=null, selMachine=null, tasks=[], sigDots=0, sigCtx=null, savedSigImg=null, brouillonId=null, isEditMode=false;
 const D={tech:'',date:'',rnum:'',tstart:'',tend:'',dur:'',signer:''};
 
 // STEPS
@@ -223,7 +223,7 @@ function goStep(n){
     }
   }
   if(n===4)fillReview();
-  if(n===5&&!document.getElementById('btn-finish')?.textContent?.includes('Sauvegarder'))setTimeout(()=>location.href='./index.html',2500);
+  if(n===5&&!isEditMode)setTimeout(()=>location.href='./index.html',2500);
 }
 
 // AUTO TASK: start with one
@@ -457,7 +457,7 @@ function clearSig(){if(sigCtx)sigCtx.clearRect(0,0,sigCtx.canvas.width,sigCtx.ca
 // REVIEW
 function fillReview(){
   document.getElementById('rev-client').innerHTML='<strong>'+selClient.nom+'</strong> — '+selClient.ville+', '+selClient.province+(selMachine?'<br>Machine : '+selMachine.type+' · '+selMachine.marque+' · S/N: '+(selMachine.serial||'—'):'');
-  document.getElementById('rev-tech').textContent=D.tech+' · '+fmtDate(D.date)+(D.dur?' · '+D.dur:'')+(D.rnum?' · No. '+D.rnum:'');
+  document.getElementById('rev-tech').textContent=D.tech+' · '+fmtDate(D.date)+(D.dur?' · '+D.dur:'');
   document.getElementById('rev-tasks').innerHTML=tasks.map((t,i)=>'<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border)"><strong>Tâche '+(i+1)+'</strong>'+(t.itype?' — '+t.itype:'')+': '+t.desc.slice(0,80)+(t.desc.length>80?'…':'')+(t.etat?'<br><span style="color:'+statusSty(t.etat).color+'">'+t.etat+'</span>':'')+(t.photos.length?' · '+t.photos.length+' photo(s)':'')+'</div>').join('');
 }
 
@@ -492,7 +492,7 @@ async function finishRapport(btn){
   if(btn){btn.textContent='⏳ Génération...';btn.disabled=true;}
   // PDF generated separately via 'Générer PDF' button
   // Save to history
-  if(!D.rnum)D.rnum=document.getElementById('f-rnum').value.trim()||genNextRnum();   const rapport={id:uid(),cid:selClient.id,mid:selMachine?selMachine.id:null,tech:D.tech,date:D.date,rnum:D.rnum,dur:D.dur,tstart:D.tstart,tend:D.tend,taches:tasks.map(t=>({itype:t.itype,desc:t.desc,etat:t.etat,reco:t.reco,photos:t.photos})),signer:D.signer,savedAt:new Date().toISOString()};
+  const rapport={id:uid(),cid:selClient.id,mid:selMachine?selMachine.id:null,tech:D.tech,date:D.date,rnum:D.rnum,dur:D.dur,tstart:D.tstart,tend:D.tend,taches:tasks.map(t=>({itype:t.itype,desc:t.desc,etat:t.etat,reco:t.reco,photos:t.photos})),signer:D.signer,savedAt:new Date().toISOString()};
   // If this was a draft, give it the same ID to overwrite
   if (brouillonId) rapport.id = brouillonId;
   rapport.statut = 'final';
@@ -603,16 +603,15 @@ async function loadDraft(id) {
   // Step 3: Fill fields
   if (draft.tech) {
     document.getElementById('f-tech').value = draft.tech;
+    D.tech = draft.tech;
     const ts = document.getElementById('f-tech-sel');
     for(let i=0;i<ts.options.length;i++){if(ts.options[i].value===draft.tech){ts.selectedIndex=i;break;}}
   }
   if (draft.date) document.getElementById('f-date').value = draft.date;
-  const rnumVal = draft.rnum || genNextRnum();
-  document.getElementById('f-rnum').value = rnumVal;
-  D.rnum = rnumVal;
-
-  if (draft.rnum) document.getElementById('f-rnum').value = draft.rnum;
-  
+  const rnumVal2 = draft.rnum || genNextRnum();
+  document.getElementById('f-rnum').value = rnumVal2;
+  D.rnum = rnumVal2;
+  D.date = draft.date || D.date;
   // Step 4: Restore time
   if (draft.tstart) { const [h,m]=draft.tstart.split(':'); TW.sh=parseInt(h)||8; TW.sm=parseInt(m)||0; }
   if (draft.tend)   { const [h,m]=draft.tend.split(':');   TW.eh=parseInt(h)||17; TW.em=parseInt(m)||0; }
@@ -694,7 +693,7 @@ async function applyDraft(draft) {
       if(ts.options[i].value===draft.tech){ts.selectedIndex=i;break;}
     }
   }
-  if (draft.date) document.getElementById('f-date').value = draft.date;
+  if (draft.date) { document.getElementById('f-date').value = draft.date; D.date = draft.date; }
   const rnumVal = draft.rnum || genNextRnum();
   document.getElementById('f-rnum').value = rnumVal;
   D.rnum = rnumVal;
@@ -770,6 +769,7 @@ async function init() {
     const rapport = DB.rapportsSync().find(r => r.id === editRapportId);
     if (rapport) {
       brouillonId = rapport.id; // reuse same ID
+      isEditMode = true;
       await applyDraft(rapport);
       setTimeout(() => {
         const b = document.getElementById('btn-finish');
@@ -806,7 +806,7 @@ async function init() {
         mid: appel ? (appel.mid || null) : null,
         tech: appel ? (appel.tech || '') : '',
         date: (appelDate && appelDate !== '0000-00-00') ? appelDate : new Date().toISOString().split('T')[0],
-        rnum: '',
+        rnum: (appelDate && appelDate !== '0000-00-00') ? 'SR-'+appelDate.replace(/-/g,'').slice(2) : '',
         taches: [{ itype, desc: appel ? (appel.notes || appel.titre || '') : '', etat:'', reco:'', photos:[] }],
         statut: 'brouillon',
         appel_id: prefillAppelId,
