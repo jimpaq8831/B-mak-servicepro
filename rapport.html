@@ -424,9 +424,7 @@ function renderTasks(){
     '<div class="field"><label class="lbl">Photos ('+t.photos.length+')</label>'+
     '<div class="photo-add" onclick="triggerPhoto(\''+t.id+'\')">📷 Appuyer pour prendre / choisir une photo</div>'+
     '<input type="file" id="ph_'+t.id+'" accept="image/*" multiple  style="display:none">'+
-    '<div class="photo-grid" id="pg_'+t.id+'">'+t.photos.map((src,pi)=>'<div class="photo-wrap"><img src="'+src+'"><button class="photo-del" onclick="delPhoto(\''+t.id+'\','+pi+')">✕</button></div>').join('')+'</div>'+
-    '</div>'+
-  '</div>').join('');
+    '<div class="photo-grid" id="pg_'+t.id+'">'+t.photos.map((src,pi)=>'<div class=\"photo-wrap\" style=\"position:relative;display:inline-block;margin:4px\"><img src=\"'+src+'\" onclick=\"viewPhoto(this.src)\" style=\"width:88px;height:88px;object-fit:cover;border-radius:8px;cursor:pointer\"><button class=\"photo-del\" style=\"position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:11px;cursor:pointer\" onclick=\"delPhoto(\''+t.id+'\','+pi+')\">✕</button></div>').join('')+'</div>'+
 
   // Bind events after render
   document.querySelectorAll('.task-pill').forEach(el=>{
@@ -465,6 +463,7 @@ function renderTasks(){
   });
 }
 function triggerPhoto(tid){document.getElementById('ph_'+tid).click();}
+function viewPhoto(src){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer';const i=document.createElement('img');i.src=src;i.style.cssText='max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px';o.appendChild(i);o.onclick=()=>document.body.removeChild(o);document.body.appendChild(o);}
 function delPhoto(tid,pi){const t=tasks.find(t=>t.id===tid);if(t){t.photos.splice(pi,1);renderTasks();}}
 
 // CLIENT SEARCH
