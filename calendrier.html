@@ -415,22 +415,43 @@ function appelCardHTML(a){
 // Note: outerHTML loses event listeners — re-attach after render
 
 
+let _appelFilter = 'all';
+function setAppelFilter(f){
+  _appelFilter = f;
+  const colors = {'all':'var(--teal)','Non-cédulé':'#8e8e93','En attente':'#ff9500','En cours':'#037F8C','Terminé':'#34c759'};
+  const map = {'all':'sf-all','Non-cédulé':'sf-non','En attente':'sf-att','En cours':'sf-enc','Terminé':'sf-ter'};
+  Object.entries(map).forEach(([k,id])=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const isActive = k===f;
+    const c = colors[k]||'var(--teal)';
+    if(isActive){el.style.background=c;el.style.color='#fff';el.style.border='none';}
+    else{el.style.background=c+'22';el.style.color=c;el.style.border='1px solid '+c+'44';}
+  });
+  renderAllAppels();
+}
+
 function renderAllAppels(){
   const allAppels=DB.appelsSync();
-  // Undated appels (Non-cédulé / En attente) shown at top
-  const undated=allAppels.filter(a=>(!a.date||a.date==='0000-00-00')&&a.statut!=='Terminé');
-  const dated=allAppels.filter(a=>a.date&&a.date!=='0000-00-00'&&a.date>=today&&a.statut!=='Terminé').sort((a,b)=>a.date.localeCompare(b.date)||a.heure.localeCompare(b.heure));
-  const appels=[...undated,...dated];
-  const el=document.getElementById('all-appels');
-  if(!appels.length){el.innerHTML='<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun appel planifié</div></div>';return;}
-  // Add section header for undated appels
-  let html='';
-  if(undated.length){
-    html+='<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 6px">Sans date ('+undated.length+')</div>';
+  const f = _appelFilter;
+  let appels;
+  if(f === 'all') {
+    const undated=allAppels.filter(a=>(!a.date||a.date==='0000-00-00')&&a.statut!=='Terminé');
+    const dated=allAppels.filter(a=>a.date&&a.date!=='0000-00-00'&&a.date>=today&&a.statut!=='Terminé').sort((a,b)=>a.date.localeCompare(b.date)||a.heure.localeCompare(b.heure));
+    appels=[...undated,...dated];
+  } else if(f==='Terminé') {
+    appels=allAppels.filter(a=>a.statut==='Terminé').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  } else {
+    const undated=allAppels.filter(a=>(!a.date||a.date==='0000-00-00')&&(a.statut||'Non-cédulé')===f);
+    const dated=allAppels.filter(a=>a.date&&a.date!=='0000-00-00'&&(a.statut||'Non-cédulé')===f).sort((a,b)=>a.date.localeCompare(b.date)||a.heure.localeCompare(b.heure));
+    appels=[...undated,...dated];
   }
-  el.innerHTML=html+appels.map(a=>appelCardHTML(a)).join('');
+  const el=document.getElementById('all-appels');
+  if(!appels.length){el.innerHTML='<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun appel</div></div>';return;}
+  el.innerHTML=appels.map(a=>appelCardHTML(a)).join('');
   attachCardEvents(el);
 }
+
 
 function prevMonth(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCal();}
 function nextMonth(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCal();}
