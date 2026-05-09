@@ -128,7 +128,7 @@ if ('serviceWorker' in navigator) {
       </select>
     </div>
   </div>
-  <div class="kanban-board" id="kanban-board"></div>
+  <div class="kanban-board" id="kanban-board" style="display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;align-items:flex-start"></div>
 </div>
 
 <!-- ── CALENDAR VIEW ── -->
@@ -418,8 +418,8 @@ function appelCardHTML(a){
 function renderAllAppels(){
   const allAppels=DB.appelsSync();
   // Undated appels (Non-cédulé / En attente) shown at top
-  const undated=allAppels.filter(a=>!a.date||a.date==='0000-00-00');
-  const dated=allAppels.filter(a=>a.date&&a.date!=='0000-00-00'&&a.date>=today).sort((a,b)=>a.date.localeCompare(b.date)||a.heure.localeCompare(b.heure));
+  const undated=allAppels.filter(a=>(!a.date||a.date==='0000-00-00')&&a.statut!=='Terminé');
+  const dated=allAppels.filter(a=>a.date&&a.date!=='0000-00-00'&&a.date>=today&&a.statut!=='Terminé').sort((a,b)=>a.date.localeCompare(b.date)||a.heure.localeCompare(b.heure));
   const appels=[...undated,...dated];
   const el=document.getElementById('all-appels');
   if(!appels.length){el.innerHTML='<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun appel planifié</div></div>';return;}
@@ -886,6 +886,62 @@ async function init() {
   renderCal();
   renderAllAppels();
 }
+
+function setView(v){
+  const calView = document.getElementById('view-cal');
+  const kanView = document.getElementById('view-kanban');
+  const btnCal = document.getElementById('btn-cal');
+  const btnKan = document.getElementById('btn-kanban');
+  if(v==='kanban'){
+    if(calView) calView.style.display='none';
+    if(kanView) kanView.style.display='block';
+    if(btnCal) {btnCal.style.background='rgba(255,255,255,0.15)';btnCal.style.color='#fff';}
+    if(btnKan) {btnKan.style.background='var(--teal)';btnKan.style.color='#fff';}
+    renderKanban();
+  } else {
+    if(kanView) kanView.style.display='none';
+    if(calView) calView.style.display='block';
+    if(btnCal) {btnCal.style.background='var(--teal)';btnCal.style.color='#fff';}
+    if(btnKan) {btnKan.style.background='rgba(255,255,255,0.15)';btnKan.style.color='#fff';}
+  }
+}
+
+function renderKanban(){
+  const cols = ['Non-cédulé','En attente','En cours','Terminé'];
+  const colColors = {'Non-cédulé':'#8e8e93','En attente':'#ff9500','En cours':'#037F8C','Terminé':'#34c759'};
+  const techFilter = document.getElementById('kanban-tech-filter')?.value || '';
+  let appels = DB.appelsSync();
+  if(techFilter) appels = appels.filter(a=>a.tech===techFilter);
+
+  const board = document.getElementById('kanban-board');
+  if(!board) return;
+  board.innerHTML = cols.map(statut => {
+    const colAppels = appels.filter(a=>(a.statut||'Non-cédulé')===statut);
+    const color = colColors[statut]||'#8e8e93';
+    const cards = colAppels.length
+      ? colAppels.map(a=>{
+          const c=DB.clientById(a.cid);
+          const dateLabel=(!a.date||a.date==='0000-00-00')?'Non daté':fmtDate(a.date);
+          return '<div onclick="editAppel(''+a.id+'')" style="background:#fff;border-radius:8px;padding:12px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.08);cursor:pointer;border:1px solid var(--border)">'
+            +'<div style="font-size:12px;color:var(--text3);margin-bottom:4px">'+dateLabel+' · '+(a.tech||'—')+'</div>'
+            +'<div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:4px">'+(c?c.nom:'—')+'</div>'
+            +'<div style="font-size:12px;color:var(--text3)">'+a.titre+'</div>'
+            +'</div>';
+        }).join('')
+      : '<div style="font-size:13px;color:var(--text3);text-align:center;padding:16px">Aucun</div>';
+    return '<div style="flex:1;min-width:200px;max-width:280px">'
+      +'<div style="font-weight:700;font-size:13px;color:'+color+';margin-bottom:10px;padding:6px 10px;background:'+color+'22;border-radius:8px">'+statut+' ('+colAppels.length+')</div>'
+      +cards+'</div>';
+  }).join('');
+
+  // Populate tech filter
+  const techSel = document.getElementById('kanban-tech-filter');
+  if(techSel && techSel.options.length <= 1){
+    const techs=[...new Set(DB.appelsSync().map(a=>a.tech).filter(Boolean))];
+    techs.forEach(t=>{ const o=document.createElement('option');o.value=t;o.textContent=t;techSel.appendChild(o); });
+  }
+}
+
 init();
 </script>
 <!-- Quick date modal -->
