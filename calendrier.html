@@ -149,7 +149,14 @@ if ('serviceWorker' in navigator) {
     <button class="btn btn-primary" style="margin-top:8px" onclick="showAddAppel()">+ Ajouter un appel de service</button>
   </div>
 
-  <div class="sec">Tous les appels à venir</div>
+  <div class="sec">Appels de service</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+    <button id="sf-all" onclick="setAppelFilter('all')" style="padding:6px 12px;border-radius:20px;border:none;background:var(--teal);color:#fff;font-size:12px;font-weight:700;cursor:pointer">Tous</button>
+    <button id="sf-non" onclick="setAppelFilter('Non-cédulé')" style="padding:6px 12px;border-radius:20px;border:1px solid #8e8e93;background:#8e8e9322;color:#8e8e93;font-size:12px;font-weight:700;cursor:pointer">Non-cédulé</button>
+    <button id="sf-att" onclick="setAppelFilter('En attente')" style="padding:6px 12px;border-radius:20px;border:1px solid #ff9500;background:#ff950022;color:#ff9500;font-size:12px;font-weight:700;cursor:pointer">En attente</button>
+    <button id="sf-enc" onclick="setAppelFilter('En cours')" style="padding:6px 12px;border-radius:20px;border:1px solid #037F8C;background:#037F8C22;color:#037F8C;font-size:12px;font-weight:700;cursor:pointer">En cours</button>
+    <button id="sf-ter" onclick="setAppelFilter('Terminé')" style="padding:6px 12px;border-radius:20px;border:1px solid #34c759;background:#34c75922;color:#34c759;font-size:12px;font-weight:700;cursor:pointer">Terminé</button>
+  </div>
   <div id="all-appels"></div>
 </div>
 
@@ -415,55 +422,40 @@ function appelCardHTML(a){
 // Note: outerHTML loses event listeners — re-attach after render
 
 
-let _activeFilters = new Set(); // empty = show all non-Terminé
-
+let _appelFilter = 'all';
 function setAppelFilter(f){
-  // Toggle filter on/off
-  if(_activeFilters.has(f)){
-    _activeFilters.delete(f);
-  } else {
-    _activeFilters.add(f);
-  }
-  // Update button styles
-  const colors = {'Non-cédulé':'#8e8e93','En attente':'#ff9500','En cours':'#037F8C','Terminé':'#34c759'};
-  const map = {'Non-cédulé':'sf-non','En attente':'sf-att','En cours':'sf-enc','Terminé':'sf-ter'};
+  _appelFilter = f;
+  const colors = {'all':'var(--teal)','Non-cédulé':'#8e8e93','En attente':'#ff9500','En cours':'#037F8C','Terminé':'#34c759'};
+  const map = {'all':'sf-all','Non-cédulé':'sf-non','En attente':'sf-att','En cours':'sf-enc','Terminé':'sf-ter'};
   Object.entries(map).forEach(([k,id])=>{
     const el=document.getElementById(id);
     if(!el) return;
-    const isActive = _activeFilters.has(k);
-    const c = colors[k];
+    const isActive = k===f;
+    const c = colors[k]||'var(--teal)';
     if(isActive){el.style.background=c;el.style.color='#fff';el.style.border='none';}
     else{el.style.background=c+'22';el.style.color=c;el.style.border='1px solid '+c+'44';}
   });
-  // Hide "Tous" button when filters active
-  const btnAll = document.getElementById('sf-all');
-  if(btnAll) btnAll.style.display = _activeFilters.size ? 'none' : 'inline-block';
   renderAllAppels();
 }
 
 function renderAllAppels(){
-  const allAppels = DB.appelsSync();
+  const allAppels=DB.appelsSync();
+  const f = _appelFilter;
   let appels;
-  if(_activeFilters.size === 0){
-    // Default: show all non-Terminé
-    const undated = allAppels.filter(a=>(!a.date||a.date==='0000-00-00')&&a.statut!=='Terminé');
-    const dated = allAppels.filter(a=>a.date&&a.date!=='0000-00-00'&&a.date>=today&&a.statut!=='Terminé').sort((a,b)=>a.date.localeCompare(b.date)||a.heure.localeCompare(b.heure));
-    appels = [...undated, ...dated];
+  if(f === 'all') {
+    const undated=allAppels.filter(a=>(!a.date||a.date==='0000-00-00')&&a.statut!=='Terminé');
+    const dated=allAppels.filter(a=>a.date&&a.date!=='0000-00-00'&&a.date>=today&&a.statut!=='Terminé').sort((a,b)=>a.date.localeCompare(b.date)||a.heure.localeCompare(b.heure));
+    appels=[...undated,...dated];
+  } else if(f==='Terminé') {
+    appels=allAppels.filter(a=>a.statut==='Terminé').sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   } else {
-    // Show selected statuts
-    const activeArr = [..._activeFilters];
-    const undated = allAppels.filter(a=>(!a.date||a.date==='0000-00-00')&&activeArr.includes(a.statut||'Non-cédulé'));
-    const dated = allAppels.filter(a=>a.date&&a.date!=='0000-00-00'&&activeArr.includes(a.statut||'Non-cédulé')).sort((a,b)=>a.date.localeCompare(b.date)||a.heure.localeCompare(b.heure));
-    // Terminé sorted newest first
-    const termine = activeArr.includes('Terminé')
-      ? allAppels.filter(a=>a.statut==='Terminé').sort((a,b)=>(b.date||'').localeCompare(a.date||''))
-      : [];
-    const nonTermine = [...undated, ...dated].filter(a=>a.statut!=='Terminé');
-    appels = [...nonTermine, ...termine];
+    const undated=allAppels.filter(a=>(!a.date||a.date==='0000-00-00')&&(a.statut||'Non-cédulé')===f);
+    const dated=allAppels.filter(a=>a.date&&a.date!=='0000-00-00'&&(a.statut||'Non-cédulé')===f).sort((a,b)=>a.date.localeCompare(b.date)||a.heure.localeCompare(b.heure));
+    appels=[...undated,...dated];
   }
-  const el = document.getElementById('all-appels');
+  const el=document.getElementById('all-appels');
   if(!appels.length){el.innerHTML='<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun appel</div></div>';return;}
-  el.innerHTML = appels.map(a=>appelCardHTML(a)).join('');
+  el.innerHTML=appels.map(a=>appelCardHTML(a)).join('');
   attachCardEvents(el);
 }
 
