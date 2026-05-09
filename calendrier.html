@@ -149,7 +149,14 @@ if ('serviceWorker' in navigator) {
     <button class="btn btn-primary" style="margin-top:8px" onclick="showAddAppel()">+ Ajouter un appel de service</button>
   </div>
 
-  <div class="sec">Tous les appels à venir</div>
+  <div class="sec">Appels de service</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+    <button id="sf-all" onclick="setAppelFilter('all')" style="padding:6px 12px;border-radius:20px;border:none;background:var(--teal);color:#fff;font-size:12px;font-weight:700;cursor:pointer">Tous</button>
+    <button id="sf-non" onclick="setAppelFilter('Non-cédulé')" style="padding:6px 12px;border-radius:20px;border:1px solid #8e8e93;background:#8e8e9322;color:#8e8e93;font-size:12px;font-weight:700;cursor:pointer">Non-cédulé</button>
+    <button id="sf-att" onclick="setAppelFilter('En attente')" style="padding:6px 12px;border-radius:20px;border:1px solid #ff9500;background:#ff950022;color:#ff9500;font-size:12px;font-weight:700;cursor:pointer">En attente</button>
+    <button id="sf-enc" onclick="setAppelFilter('En cours')" style="padding:6px 12px;border-radius:20px;border:1px solid #037F8C;background:#037F8C22;color:#037F8C;font-size:12px;font-weight:700;cursor:pointer">En cours</button>
+    <button id="sf-ter" onclick="setAppelFilter('Terminé')" style="padding:6px 12px;border-radius:20px;border:1px solid #34c759;background:#34c75922;color:#34c759;font-size:12px;font-weight:700;cursor:pointer">Terminé</button>
+  </div>
   <div id="all-appels"></div>
 </div>
 
