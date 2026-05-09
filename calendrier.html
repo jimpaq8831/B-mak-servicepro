@@ -352,9 +352,9 @@ function renderCal(){
 
 function selectDay(date){
   selDate=date; renderCal();
-  const evs=DB.appelsSync().filter(a=>a.date===date&&a.date!=='0000-00-00').sort((a,b)=>a.heure.localeCompare(b.heure));
+  const evs=DB.appelsSync().filter(a=>a.date===date&&a.date!=='0000-00-00'&&a.statut!=='Terminé').sort((a,b)=>a.heure.localeCompare(b.heure));
   document.getElementById('day-section').style.display='block';
-  document.getElementById('day-title').textContent=fmtDate(date)+(evs.length?' — '+evs.length+' appel(s)':'');
+  document.getElementById('day-title').textContent=fmtDate(date)+(evs.length?' — '+evs.length+' appel(s)':' — Aucun appel');
   renderDayEvents(evs);
 }
 
