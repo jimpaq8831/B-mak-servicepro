@@ -786,13 +786,12 @@ function buildMailtoLink(a, t){
   return 'mailto:' + t.email + '?subject=' + subj + '&body=' + body;
 }
 
-// Upload le .ics dans Supabase Storage et retourne l'URL publique
+// Upload le .ics dans Supabase Storage et retourne l'URL raccourcie via TinyURL
 async function uploadICSToStorage(a, t) {
   const sb = getSB();
   if (!sb) return null;
   const icsContent = buildICS(a, t);
   const blob = new Blob([icsContent], {type: 'text/calendar;charset=utf-8'});
-  const c = DB.clientById(a.cid);
   const fileName = 'appel_' + a.id + '.ics';
   const { error } = await sb.storage.from('ics').upload(fileName, blob, {
     contentType: 'text/calendar',
@@ -800,7 +799,16 @@ async function uploadICSToStorage(a, t) {
   });
   if (error) { console.warn('ICS upload error:', error); return null; }
   const { data } = sb.storage.from('ics').getPublicUrl(fileName);
-  return data.publicUrl;
+  const longUrl = data.publicUrl;
+  // Raccourcir avec TinyURL pour que le lien soit cliquable sur iPhone
+  try {
+    const resp = await fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(longUrl));
+    if (resp.ok) {
+      const short = await resp.text();
+      if (short.startsWith('https://tinyurl.com/')) return short;
+    }
+  } catch(e) { console.warn('TinyURL error:', e); }
+  return longUrl; // fallback: URL longue
 }
 
 // Ouvre SMS avec lien .ics Supabase
