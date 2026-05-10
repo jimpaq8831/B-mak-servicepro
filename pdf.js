@@ -129,7 +129,7 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
         const px = margin + col*(iw+4);
         try {
           const fmt = src.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
-          doc.addImage(src, fmt, px, y, iw, ih, '', 'MEDIUM');
+          doc.addImage(src, fmt, px, y, iw, ih, '', 'FAST');
           doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
           doc.rect(px, y, iw, ih, 'S');
           // Photo number
