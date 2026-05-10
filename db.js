@@ -116,10 +116,13 @@ async function dbUpsert(table, row) {
   if (table === 'appels') {
     delete row.rapport_id; // Not in schema yet — remove to avoid 400
   }
-  // Update local cache immediately
+  // Update local cache immediately (strip photos from rapports to avoid LS quota)
   const local = LS.get(table) || [];
   const idx = local.findIndex(r => r.id === row.id);
-  if (idx >= 0) local[idx] = row; else local.push(row);
+  const rowForCache = table === 'rapports'
+    ? {...row, taches: row.taches ? row.taches.map(t => ({...t, photos: t.photos && Array.isArray(t.photos) ? t.photos.length : (t.photos || 0)})) : row.taches}
+    : row;
+  if (idx >= 0) local[idx] = rowForCache; else local.push(rowForCache);
   LS.set(table, local);
   if (!sb || !isOnline) { addPending({ type: 'upsert', table, data: row }); updateStatusBadge(); return; }
   const { error } = await sb.from(table).upsert(row);
