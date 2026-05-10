@@ -198,8 +198,9 @@ function editRapport(id){
   location.href = './rapport.html';
 }
 
-function regenPDF(id){
-  const r = DB.rapportsSync().find(x => x.id === id);
+async function regenPDF(id){
+  // Use rapportById to get full data including photos (not stripped LS cache)
+  const r = await DB.rapportById(id);
   if(!r){ alert('Rapport introuvable'); return; }
   const c = DB.clientById(r.cid);
   if(!c){ alert('Client introuvable.'); return; }
