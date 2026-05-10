@@ -155,6 +155,7 @@ if ('serviceWorker' in navigator) {
     <button id="sf-att" onclick="setAppelFilter('En attente')" style="padding:6px 12px;border-radius:20px;border:1px solid #ff9500;background:#ff950022;color:#ff9500;font-size:12px;font-weight:700;cursor:pointer">En attente</button>
     <button id="sf-enc" onclick="setAppelFilter('En cours')" style="padding:6px 12px;border-radius:20px;border:1px solid #037F8C;background:#037F8C22;color:#037F8C;font-size:12px;font-weight:700;cursor:pointer">En cours</button>
     <button id="sf-ter" onclick="setAppelFilter('Terminé')" style="padding:6px 12px;border-radius:20px;border:1px solid #34c759;background:#34c75922;color:#34c759;font-size:12px;font-weight:700;cursor:pointer">Terminé</button>
+    <button id="sf-arc" onclick="setAppelFilter('Archivé')" style="padding:6px 12px;border-radius:20px;border:1px solid #8e8e93;background:#8e8e9322;color:#8e8e93;font-size:12px;font-weight:700;cursor:pointer">📦 Archivé</button>
   </div>
   <div id="all-appels"></div>
 </div>
@@ -368,6 +369,7 @@ function attachCardEvents(container){
   container.querySelectorAll('.rapport-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();startRapport(this.dataset.id);}));
   container.querySelectorAll('.edit-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();editAppel(this.dataset.id);}));
   container.querySelectorAll('.arch-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();archiveAppel(this.dataset.id);}));
+  container.querySelectorAll('.dearch-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();desarchiverAppel(this.dataset.id);}));
   container.querySelectorAll('.del-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();deleteAppel(this.dataset.id);}));
   container.querySelectorAll('.ics-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();doExportICS(this.dataset.id);}));
 }
@@ -433,8 +435,8 @@ function setAppelFilter(f){
     _activeFilters.add(f);
   }
   // Update button styles
-  const colors = {'Non-cédulé':'#8e8e93','En attente':'#ff9500','En cours':'#037F8C','Terminé':'#34c759'};
-  const map = {'Non-cédulé':'sf-non','En attente':'sf-att','En cours':'sf-enc','Terminé':'sf-ter'};
+  const colors = {'Non-cédulé':'#8e8e93','En attente':'#ff9500','En cours':'#037F8C','Terminé':'#34c759','Archivé':'#8e8e93'};
+  const map = {'Non-cédulé':'sf-non','En attente':'sf-att','En cours':'sf-enc','Terminé':'sf-ter','Archivé':'sf-arc'};
   Object.entries(map).forEach(([k,id])=>{
     const el=document.getElementById(id);
     if(!el) return;
@@ -466,8 +468,11 @@ function renderAllAppels(){
     const termine = activeArr.includes('Terminé')
       ? allAppels.filter(a=>a.statut==='Terminé').sort((a,b)=>(b.date||'').localeCompare(a.date||''))
       : [];
-    const nonTermine = [...undated, ...dated].filter(a=>a.statut!=='Terminé');
-    appels = [...nonTermine, ...termine];
+    const archive = activeArr.includes('Archivé')
+      ? allAppels.filter(a=>a.statut==='Archivé').sort((a,b)=>(b.date||'').localeCompare(a.date||''))
+      : [];
+    const nonTermine = [...undated, ...dated].filter(a=>a.statut!=='Terminé'&&a.statut!=='Archivé');
+    appels = [...nonTermine, ...termine, ...archive];
   }
   const el = document.getElementById('all-appels');
   if(!appels.length){el.innerHTML='<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun appel</div></div>';return;}
@@ -882,6 +887,18 @@ async function archiveAppel(id){
   const appel = allAppels.find(a=>a.id===id);
   if(!appel) return;
   await DB.saveAppel({...appel, statut:'Archivé'});
+  await DB.appels();
+  renderCal(); renderAllAppels();
+  if(selDate) selectDay(selDate);
+  if(typeof renderKanban === 'function' && document.getElementById('view-kanban')?.style.display !== 'none') renderKanban();
+}
+
+async function desarchiverAppel(id){
+  const allAppels = DB.appelsSync();
+  const appel = allAppels.find(a=>a.id===id);
+  if(!appel) return;
+  await DB.saveAppel({...appel, statut:'Terminé'});
+  await DB.appels();
   renderCal(); renderAllAppels();
   if(selDate) selectDay(selDate);
 }
