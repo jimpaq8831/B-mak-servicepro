@@ -203,7 +203,7 @@ function renderStepDots(n){
 }
 function goStep(n){
   // Auto-save draft when navigating (not on final step 5)
-  if (selClient && n > 1 && n < 5 && !savedSigImg) saveDraft();
+  if (selClient && n > 1 && n < 5 && !savedSigImg && !isEditMode) saveDraft();
   [1,2,3,4,5].forEach(i=>{const el=document.getElementById('s'+i);if(el)el.style.display=i===n?'block':'none';});
   curStep=n;
   renderStepDots(n);
@@ -524,9 +524,9 @@ async function finishRapport(btn){
   brouillonId = null; // Clear BEFORE goStep(4) to prevent re-save
 
   // Auto-create a "Terminé" appel de service in the calendar
-  // (only if not coming from an existing appel)
+  // (only if not coming from an existing appel AND not in edit mode)
   const prefillAppelId = localStorage.getItem('bmak_last_appel_id');
-  if (!prefillAppelId) {
+  if (!prefillAppelId && !isEditMode) {
     // Create new appel linked to this rapport
     await DB.saveAppel({
       id: uid(),
@@ -655,7 +655,7 @@ async function loadDraft(id) {
 
 
 // Auto-save every 30 seconds
-setInterval(() => { if (selClient && curStep > 1) saveDraft(); }, 300000);
+setInterval(() => { if (selClient && curStep > 1 && !isEditMode) saveDraft(); }, 300000);
 
 function resetForm(){
   selClient=null;selMachine=null;tasks=[];sigDots=0;brouillonId=null;
