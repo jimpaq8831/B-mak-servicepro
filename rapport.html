@@ -782,14 +782,16 @@ async function init() {
     // Continue an existing brouillon from historique
     localStorage.removeItem('bmak_draft_id');
     await DB.rapports();
-    const draft = DB.rapportsSync().find(r => r.id === resumeDraftId);
+    // Use rapportById to get full data including photos
+    const draft = await DB.rapportById(resumeDraftId);
     if (draft) { await applyDraft(draft); }
 
   } else if (editRapportId) {
     // Edit a final rapport from historique
     localStorage.removeItem('bmak_edit_rapport_id');
     await DB.rapports();
-    const rapport = DB.rapportsSync().find(r => r.id === editRapportId);
+    // Use rapportById to get full data including photos (not stripped LS cache)
+    const rapport = await DB.rapportById(editRapportId);
     if (rapport) {
       brouillonId = rapport.id; // reuse same ID
       isEditMode = true;
