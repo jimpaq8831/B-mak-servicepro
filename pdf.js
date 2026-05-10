@@ -121,30 +121,28 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
     const photos = Array.isArray(t.photos) ? t.photos : [];
     if(photos.length) {
       if(y > 200) { doc.addPage(); y = 18; }
-      const cols = 3, iw = (W-margin*2-cols*4)/cols;
-      // Track row height per row (photos may have different ratios)
-      let rowMaxH = 0;
+      const cols = 3;
+      const iw = (W - margin*2 - cols*4) / cols;
+      const ih = 40; // hauteur fixe pour toutes les photos
       photos.slice(0,9).forEach((src, pi) => {
-        // Calculate actual image dimensions to preserve ratio
-        const tmpImg = new Image();
-        tmpImg.src = src;
-        const ratio = tmpImg.naturalHeight > 0 ? tmpImg.naturalWidth / tmpImg.naturalHeight : 1;
-        const ih = Math.min(40, iw / (ratio > 0 ? ratio : 1));
-        rowMaxH = Math.max(rowMaxH, ih);
-        if(pi % cols === 0 && pi > 0) { y += rowMaxH + 5; rowMaxH = 0; }
-        if(y + ih > 262) { doc.addPage(); y = 18; rowMaxH = 0; }
+        if(pi % cols === 0 && pi > 0) { y += ih + 5; }
+        if(y + ih > 262) { doc.addPage(); y = 18; }
         const col = pi % cols;
         const px = margin + col*(iw+4);
         try {
-          const fmt = src.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+          // Déterminer le format: URL externe ou base64
+          let fmt = 'JPEG';
+          if(typeof src === 'string') {
+            if(src.startsWith('data:image/png')) fmt = 'PNG';
+            else if(src.startsWith('data:image/jpeg') || src.startsWith('data:image/jpg')) fmt = 'JPEG';
+            else fmt = 'JPEG'; // URL Supabase Storage → JPEG par défaut
+          }
           doc.addImage(src, fmt, px, y, iw, ih, '', 'FAST');
           doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
           doc.rect(px, y, iw, ih, 'S');
-          // Photo number
-          doc.setFillColor(0,0,0,0.5); 
           doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(150,150,150);
           doc.text('Photo '+(pi+1), px+2, y+ih-2);
-        } catch(e) {}
+        } catch(e) { console.warn('PDF photo error:', e); }
       });
       const rows = Math.ceil(Math.min(photos.length,9)/cols);
       y += rows*(ih+5)+4;
