@@ -114,7 +114,7 @@ async function dbUpsert(table, row) {
   }
   // Remove fields that don't exist in Supabase schema
   if (table === 'appels') {
-    delete row.rapport_id; // Not in schema yet — remove to avoid 400
+    // rapport_id is now in Supabase schema — keep it
   }
   // Update local cache immediately (strip photos from rapports to avoid LS quota)
   const local = LS.get(table) || [];
