@@ -87,8 +87,12 @@ async function dbGet(table) {
       return r;
     });
   }
-  LS.set(table, allData);
-  return allData;
+  // Strip photos from LS cache to avoid quota errors (photos stay in Supabase)
+  const cacheData = table === 'rapports'
+    ? allData.map(r => ({...r, taches: r.taches ? r.taches.map(t => ({...t, photos: t.photos && t.photos.length ? t.photos.length : 0})) : r.taches}))
+    : allData;
+  LS.set(table, cacheData);
+  return allData; // Return full data WITH photos
 }
 
 async function dbUpsert(table, row) {
@@ -140,6 +144,15 @@ const DB = {
   clients:    () => dbGet('clients'),
   machines:   () => dbGet('machines'),
   rapports:   () => dbGet('rapports'),
+  rapportById: async (id) => {
+    const sb = getSB();
+    if (!sb) return DB.rapportsSync().find(r => r.id === id) || null;
+    const { data, error } = await sb.from('rapports').select('*').eq('id', id).single();
+    if (error || !data) return DB.rapportsSync().find(r => r.id === id) || null;
+    if (data.sig_img !== undefined) { data.sigImg = data.sig_img; }
+    if (data.saved_at !== undefined) { data.savedAt = data.saved_at; }
+    return data;
+  },
   appels:     () => dbGet('appels'),
   techs:      () => dbGet('techs'),
 
