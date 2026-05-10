@@ -912,6 +912,12 @@ function startRapport(id){
   const appels=DB.appelsSync();
   const a=appels.find(x=>x.id===id);
   if(a){
+    // If appel already has a linked rapport, open it in edit mode
+    if(a.rapport_id){
+      localStorage.setItem('bmak_edit_rapport_id', a.rapport_id);
+      location.href='./rapport.html';
+      return;
+    }
     localStorage.setItem('bmak_prefill_client', a.cid);
     localStorage.setItem('bmak_prefill_appel', id);
   }
