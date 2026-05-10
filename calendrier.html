@@ -739,47 +739,58 @@ async function saveAppel(){
 // ════════════════════════════
 //  ICS / SMS / EMAIL BUILDERS
 // ════════════════════════════
-function buildSMSBody(a,t){
-  const c=DB.clientById(a.cid);
-  const datesStr=a.dates&&a.dates.length>1
-    ? a.dates.map(d=>fmtDate(d)).join(', ')
-    : fmtDate(a.date);
-  const msg=encodeURIComponent(
-    'Bonjour '+t.prenom+',\n\n'+
-    'Tu as un appel de service B-Mak :\n'+
-    '📋 '+a.titre+'\n'+
-    '🏭 '+(c?c.nom:'')+'\n'+
-    (c&&c.adresse?'📍 '+c.adresse+', '+c.ville+'\n':'')+
-    '📅 '+datesStr+' à '+a.heure+'\n'+
-    (a.prio==='Urgente'?'⚠️ URGENTE\n':'')+
-    (a.notes?'📝 '+a.notes+'\n':'')+
-    '\nBonne journée!\n— B-Mak ServicePro'
-  );
-  return '?body='+msg;
+// Génère un data URL base64 du fichier .ics pour l'inclure dans SMS/email
+function buildICSDataURL(a, t) {
+  const icsContent = buildICS(a, t);
+  const b64 = btoa(unescape(encodeURIComponent(icsContent)));
+  return 'data:text/calendar;charset=utf-8;base64,' + b64;
 }
 
-function buildMailtoLink(a,t){
-  const c=DB.clientById(a.cid);
-  const m=a.mid?DB.machineById(a.mid):null;
-  const datesStr=a.dates&&a.dates.length>1
-    ? a.dates.map(d=>fmtDate(d)).join('\n   ')
+function buildSMSBody(a, t){
+  const c = DB.clientById(a.cid);
+  const datesStr = a.dates && a.dates.length > 1
+    ? a.dates.map(d => fmtDate(d)).join(', ')
     : fmtDate(a.date);
-  const subj=encodeURIComponent('[B-Mak] Appel de service — '+(c?c.nom:'')+' — '+a.titre);
-  const body=encodeURIComponent(
-    'Bonjour '+t.prenom+',\n\n'+
-    'Tu as un ou plusieurs appels de service B-Mak. Voici les détails :\n\n'+
-    '📋 Description : '+a.titre+'\n'+
-    '🏭 Client : '+(c?c.nom:'')+'\n'+
-    (c&&c.adresse?'📍 Adresse : '+c.adresse+', '+c.ville+', '+c.province+'\n':'')+
-    (c&&c.tel?'📞 Tél. client : '+c.tel+'\n':'')+
-    (m?'🔧 Machine : '+m.type+' ('+m.marque+(m.serial?' · S/N: '+m.serial:'')+')'+'\n':'')+
-    '📅 Date(s) :\n   '+datesStr+'\n'+
-    '🕐 Heure : '+a.heure+'\n'+
-    (a.prio==='Urgente'?'\n⚠️ PRIORITÉ URGENTE\n':'')+
-    (a.notes?'\n📝 Notes : '+a.notes+'\n':'')+
-    '\nCordialement,\nB-Mak ServicePro'
+  const icsUrl = buildICSDataURL(a, t);
+  const msg = encodeURIComponent(
+    'Bonjour ' + t.prenom + ',\n\n' +
+    'Tu as un appel de service B-Mak :\n' +
+    '📋 ' + a.titre + '\n' +
+    '🏭 ' + (c ? c.nom : '') + '\n' +
+    (c && c.adresse ? '📍 ' + c.adresse + ', ' + c.ville + '\n' : '') +
+    '📅 ' + datesStr + ' à ' + a.heure + '\n' +
+    (a.prio === 'Urgente' ? '⚠️ URGENTE\n' : '') +
+    (a.notes ? '📝 ' + a.notes + '\n' : '') +
+    '\n📆 Ajouter à ton calendrier :\n' + icsUrl +
+    '\n\nBonne journée!\n— B-Mak ServicePro'
   );
-  return 'mailto:'+t.email+'?subject='+subj+'&body='+body;
+  return '?body=' + msg;
+}
+
+function buildMailtoLink(a, t){
+  const c = DB.clientById(a.cid);
+  const m = a.mid ? DB.machineById(a.mid) : null;
+  const datesStr = a.dates && a.dates.length > 1
+    ? a.dates.map(d => fmtDate(d)).join('\n   ')
+    : fmtDate(a.date);
+  const icsUrl = buildICSDataURL(a, t);
+  const subj = encodeURIComponent('[B-Mak] Appel de service — ' + (c ? c.nom : '') + ' — ' + a.titre);
+  const body = encodeURIComponent(
+    'Bonjour ' + t.prenom + ',\n\n' +
+    'Tu as un ou plusieurs appels de service B-Mak. Voici les détails :\n\n' +
+    '📋 Description : ' + a.titre + '\n' +
+    '🏭 Client : ' + (c ? c.nom : '') + '\n' +
+    (c && c.adresse ? '📍 Adresse : ' + c.adresse + ', ' + c.ville + ', ' + c.province + '\n' : '') +
+    (c && c.tel ? '📞 Tél. client : ' + c.tel + '\n' : '') +
+    (m ? '🔧 Machine : ' + m.type + ' (' + m.marque + (m.serial ? ' · S/N: ' + m.serial : '') + ')' + '\n' : '') +
+    '📅 Date(s) :\n   ' + datesStr + '\n' +
+    '🕐 Heure : ' + a.heure + '\n' +
+    (a.prio === 'Urgente' ? '\n⚠️ PRIORITÉ URGENTE\n' : '') +
+    (a.notes ? '\n📝 Notes : ' + a.notes + '\n' : '') +
+    '\n\n📆 Ajouter à ton calendrier (clique pour ouvrir) :\n' + icsUrl +
+    '\n\nCordialement,\nB-Mak ServicePro'
+  );
+  return 'mailto:' + t.email + '?subject=' + subj + '&body=' + body;
 }
 
 function buildICS(a,t){
