@@ -98,6 +98,7 @@ if ('serviceWorker' in navigator) {
   });
   caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
 }
+init();
 </script>
 <div id="sync-badge" style="display:none;position:fixed;top:58px;right:8px;z-index:99;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;transition:opacity .3s"></div>
 
@@ -906,18 +907,6 @@ function saveAndCreateRapport(){
 function closeModal(){document.getElementById('modal-appel').style.display='none';}
 
 async function init() {
-  // Preload all data into cache so clientsSync() works in the modal
-  await Promise.all([DB.clients(), DB.machines(), DB.appels(), DB.techs()]);
-  renderCal();
-  renderAllAppels();
-}
-</script>
-
-<script>
-if('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
-}
-async function init() {
   await Promise.all([DB.clients(), DB.machines(), DB.appels(), DB.techs()]);
   renderCal();
   renderAllAppels();
@@ -964,7 +953,7 @@ function renderKanban(){
             +'<div style="font-size:12px;color:var(--text3);margin-bottom:4px">'+dateLabel+' · '+(a.tech||'—')+'</div>'
             +'<div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:4px">'+(c?c.nom:'—')+'</div>'
             +'<div style="font-size:12px;color:var(--text3)">'+a.titre+'</div>'
-            +'<div style="margin-top:8px;text-align:right"><button onclick="event.stopPropagation();editAppel(this.closest('[data-id]').dataset.id)" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--text3);cursor:pointer">✏️ Modifier</button></div>'
+            +'<div style="margin-top:8px;text-align:right"><button data-eid="'+a.id+'" onclick="event.stopPropagation();editAppel(this.dataset.eid)" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--text3);cursor:pointer">✏️ Modifier</button></div>'
             +'</div>';
         }).join('')
       : '<div class="k-drop-empty" style="font-size:13px;color:var(--text3);text-align:center;padding:20px;border:2px dashed var(--border);border-radius:8px;min-height:60px">Déposer ici</div>';
@@ -1024,4 +1013,7 @@ function renderKanban(){
   });
 }
 
+init();
+</script>
 
+</body></html>
