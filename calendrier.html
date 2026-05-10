@@ -372,6 +372,8 @@ function attachCardEvents(container){
   container.querySelectorAll('.dearch-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();desarchiverAppel(this.dataset.id);}));
   container.querySelectorAll('.del-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();deleteAppel(this.dataset.id);}));
   container.querySelectorAll('.ics-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();doExportICS(this.dataset.id);}));
+  container.querySelectorAll('.sms-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();doSendSMS(this.dataset.id);}));
+  container.querySelectorAll('.email-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();doSendEmail(this.dataset.id);}));
 }
 
 function renderDayEvents(evs){
@@ -389,8 +391,8 @@ function appelCardHTML(a){
   const sColors={'Non-cédulé':'#8e8e93','En attente':'#ff9500','En cours':'#037F8C','Terminé':'#34c759'};
   const sBg={'Non-cédulé':'#f2f2f7','En attente':'#fff8ee','En cours':'#e6f4f5','Terminé':'#e6f9f0'};
   const datesLabel=a.dates&&a.dates.length>1?'<div style="font-size:11px;color:#6c7a89;margin-top:2px">📅 Série de '+a.dates.length+' visites</div>':'';
-  const smsLink=t&&t.cell?'<a href="sms:'+t.cell.replace(/\D/g,'')+buildSMSBody(a,t)+'" class="badge badge-teal" style="text-decoration:none">💬 Texto</a>':'';
-  const emailLink=t&&t.email?'<a href="'+buildMailtoLink(a,t)+'" class="badge badge-teal" style="text-decoration:none">✉️ Email</a>':'';
+  const smsLink=t&&t.cell?'<span class="badge badge-teal sms-btn" style="cursor:pointer" data-id="'+a.id+'">💬 Texto</span>':'';
+  const emailLink=t&&t.email?'<span class="badge badge-teal email-btn" style="cursor:pointer" data-id="'+a.id+'">✉️ Email</span>':'';
   const div=document.createElement('div');
   div.className='appel-card';
   div.style.borderLeftColor=pColor;
@@ -633,18 +635,18 @@ function updateSendSection(){
   };
   let btns='';
   if(t.cell){
-    btns+='<a href="sms:'+t.cell.replace(/\D/g,'')+buildSMSBody(previewAppel,t)+'" class="send-btn">'+
+    btns+='<div class="send-btn" onclick="doSendSMSPreview()">'+
       '<span class="send-btn-ico">💬</span>'+
-      '<div><div class="send-btn-label">Envoyer par texto</div><div class="send-btn-sub">'+t.cell+'</div></div></a>';
+      '<div><div class="send-btn-label">Envoyer par texto</div><div class="send-btn-sub">'+t.cell+' · lien .ics inclus</div></div></div>';
   }
   if(t.email){
-    btns+='<a href="'+buildMailtoLink(previewAppel,t)+'" class="send-btn">'+
+    btns+='<div class="send-btn" onclick="doSendEmailPreview()">'+
       '<span class="send-btn-ico">✉️</span>'+
-      '<div><div class="send-btn-label">Envoyer par courriel</div><div class="send-btn-sub">'+t.email+'</div></div></a>';
+      '<div><div class="send-btn-label">Envoyer par courriel</div><div class="send-btn-sub">'+t.email+' · lien .ics inclus</div></div></div>';
   }
   btns+='<div class="send-btn" onclick="previewExportICS()">'+
     '<span class="send-btn-ico">📆</span>'+
-    '<div><div class="send-btn-label">Exporter vers Outlook (.ics)</div><div class="send-btn-sub">Inclut le technicien comme invité</div></div></div>';
+    '<div><div class="send-btn-label">Exporter .ics seulement</div><div class="send-btn-sub">Outlook, Google Calendar, Apple Calendar</div></div></div>';
   document.getElementById('send-btns').innerHTML=btns;
 }
 
@@ -739,19 +741,11 @@ async function saveAppel(){
 // ════════════════════════════
 //  ICS / SMS / EMAIL BUILDERS
 // ════════════════════════════
-// Génère un data URL base64 du fichier .ics pour l'inclure dans SMS/email
-function buildICSDataURL(a, t) {
-  const icsContent = buildICS(a, t);
-  const b64 = btoa(unescape(encodeURIComponent(icsContent)));
-  return 'data:text/calendar;charset=utf-8;base64,' + b64;
-}
-
 function buildSMSBody(a, t){
   const c = DB.clientById(a.cid);
   const datesStr = a.dates && a.dates.length > 1
     ? a.dates.map(d => fmtDate(d)).join(', ')
     : fmtDate(a.date);
-  const icsUrl = buildICSDataURL(a, t);
   const msg = encodeURIComponent(
     'Bonjour ' + t.prenom + ',\n\n' +
     'Tu as un appel de service B-Mak :\n' +
@@ -761,7 +755,7 @@ function buildSMSBody(a, t){
     '📅 ' + datesStr + ' à ' + a.heure + '\n' +
     (a.prio === 'Urgente' ? '⚠️ URGENTE\n' : '') +
     (a.notes ? '📝 ' + a.notes + '\n' : '') +
-    '\n📆 Ajouter à ton calendrier :\n' + icsUrl +
+    '\n(Le fichier .ics a été téléchargé — attache-le à ce texto)' +
     '\n\nBonne journée!\n— B-Mak ServicePro'
   );
   return '?body=' + msg;
@@ -773,7 +767,6 @@ function buildMailtoLink(a, t){
   const datesStr = a.dates && a.dates.length > 1
     ? a.dates.map(d => fmtDate(d)).join('\n   ')
     : fmtDate(a.date);
-  const icsUrl = buildICSDataURL(a, t);
   const subj = encodeURIComponent('[B-Mak] Appel de service — ' + (c ? c.nom : '') + ' — ' + a.titre);
   const body = encodeURIComponent(
     'Bonjour ' + t.prenom + ',\n\n' +
@@ -787,10 +780,93 @@ function buildMailtoLink(a, t){
     '🕐 Heure : ' + a.heure + '\n' +
     (a.prio === 'Urgente' ? '\n⚠️ PRIORITÉ URGENTE\n' : '') +
     (a.notes ? '\n📝 Notes : ' + a.notes + '\n' : '') +
-    '\n\n📆 Ajouter à ton calendrier (clique pour ouvrir) :\n' + icsUrl +
+    '\n\n(Le fichier .ics a été téléchargé — attache-le à ce courriel)' +
     '\n\nCordialement,\nB-Mak ServicePro'
   );
   return 'mailto:' + t.email + '?subject=' + subj + '&body=' + body;
+}
+
+// Upload le .ics dans Supabase Storage et retourne l'URL publique
+async function uploadICSToStorage(a, t) {
+  const sb = getSB();
+  if (!sb) return null;
+  const icsContent = buildICS(a, t);
+  const blob = new Blob([icsContent], {type: 'text/calendar;charset=utf-8'});
+  const c = DB.clientById(a.cid);
+  const fileName = 'appel_' + a.id + '.ics';
+  const { error } = await sb.storage.from('ics').upload(fileName, blob, {
+    contentType: 'text/calendar',
+    upsert: true
+  });
+  if (error) { console.warn('ICS upload error:', error); return null; }
+  const { data } = sb.storage.from('ics').getPublicUrl(fileName);
+  return data.publicUrl;
+}
+
+// Ouvre SMS avec lien .ics Supabase
+async function doSendSMS(appelId) {
+  const a = DB.appelsSync().find(x => x.id === appelId);
+  if(!a) return;
+  const t = a.tech ? (LS.get('techs')||[]).find(x => x.prenom+' '+x.nom === a.tech) : null;
+  if(!t || !t.cell) return;
+  // Afficher un indicateur de chargement temporaire
+  const badge = event.target;
+  const origText = badge.textContent;
+  badge.textContent = '⏳';
+  const icsUrl = await uploadICSToStorage(a, t);
+  badge.textContent = origText;
+  const c = DB.clientById(a.cid);
+  const datesStr = a.dates && a.dates.length > 1
+    ? a.dates.map(d => fmtDate(d)).join(', ')
+    : fmtDate(a.date);
+  const msg = encodeURIComponent(
+    'Bonjour ' + t.prenom + ',\n\n' +
+    'Tu as un appel de service B-Mak :\n' +
+    '📋 ' + a.titre + '\n' +
+    '🏭 ' + (c ? c.nom : '') + '\n' +
+    (c && c.adresse ? '📍 ' + c.adresse + ', ' + c.ville + '\n' : '') +
+    '📅 ' + datesStr + ' à ' + a.heure + '\n' +
+    (a.prio === 'Urgente' ? '⚠️ URGENTE\n' : '') +
+    (a.notes ? '📝 ' + a.notes + '\n' : '') +
+    (icsUrl ? '\n📆 Ajouter à ton calendrier :\n' + icsUrl : '') +
+    '\n\nBonne journée!\n— B-Mak ServicePro'
+  );
+  window.location.href = 'sms:' + t.cell.replace(/\D/g,'') + '?body=' + msg;
+}
+
+// Ouvre Mail avec lien .ics Supabase
+async function doSendEmail(appelId) {
+  const a = DB.appelsSync().find(x => x.id === appelId);
+  if(!a) return;
+  const t = a.tech ? (LS.get('techs')||[]).find(x => x.prenom+' '+x.nom === a.tech) : null;
+  if(!t || !t.email) return;
+  const badge = event.target;
+  const origText = badge.textContent;
+  badge.textContent = '⏳';
+  const icsUrl = await uploadICSToStorage(a, t);
+  badge.textContent = origText;
+  const c = DB.clientById(a.cid);
+  const m = a.mid ? DB.machineById(a.mid) : null;
+  const datesStr = a.dates && a.dates.length > 1
+    ? a.dates.map(d => fmtDate(d)).join('\n   ')
+    : fmtDate(a.date);
+  const subj = encodeURIComponent('[B-Mak] Appel de service — ' + (c ? c.nom : '') + ' — ' + a.titre);
+  const body = encodeURIComponent(
+    'Bonjour ' + t.prenom + ',\n\n' +
+    'Tu as un ou plusieurs appels de service B-Mak. Voici les détails :\n\n' +
+    '📋 Description : ' + a.titre + '\n' +
+    '🏭 Client : ' + (c ? c.nom : '') + '\n' +
+    (c && c.adresse ? '📍 Adresse : ' + c.adresse + ', ' + c.ville + ', ' + c.province + '\n' : '') +
+    (c && c.tel ? '📞 Tél. client : ' + c.tel + '\n' : '') +
+    (m ? '🔧 Machine : ' + m.type + ' (' + m.marque + (m.serial ? ' · S/N: ' + m.serial : '') + ')\n' : '') +
+    '📅 Date(s) :\n   ' + datesStr + '\n' +
+    '🕐 Heure : ' + a.heure + '\n' +
+    (a.prio === 'Urgente' ? '\n⚠️ PRIORITÉ URGENTE\n' : '') +
+    (a.notes ? '\n📝 Notes : ' + a.notes + '\n' : '') +
+    (icsUrl ? '\n\n📆 Ajouter à ton calendrier (clique pour ouvrir) :\n' + icsUrl : '') +
+    '\n\nCordialement,\nB-Mak ServicePro'
+  );
+  window.location.href = 'mailto:' + t.email + '?subject=' + subj + '&body=' + body;
 }
 
 function buildICS(a,t){
@@ -822,6 +898,90 @@ function doExportICS(appelId){
   const t=a.tech?(LS.get('techs')||[]).find(x=>x.prenom+' '+x.nom===a.tech):null;
   downloadICS(buildICS(a,t), a);
 }
+// SMS/Email depuis le modal (avant sauvegarde)
+async function doSendSMSPreview() {
+  const techName = document.getElementById('appel-tech').value;
+  const t = techName ? (LS.get('techs')||[]).find(x => x.prenom+' '+x.nom === techName) : null;
+  if(!t || !t.cell) return;
+  const previewAppel = {
+    id: 'preview-' + Date.now(),
+    cid: selClient ? selClient.id : '',
+    mid: document.getElementById('appel-machine').value || null,
+    titre: document.getElementById('appel-titre').value.trim() || 'Appel de service',
+    date: selectedDates[0] || today,
+    dates: selectedDates,
+    heure: document.getElementById('appel-heure').value || '08:00',
+    notes: document.getElementById('appel-notes').value,
+    prio: newPrio, tech: techName,
+  };
+  const btn = event.target.closest('.send-btn');
+  const origHTML = btn ? btn.innerHTML : '';
+  if(btn) btn.innerHTML = '<span class="send-btn-ico">⏳</span><div><div class="send-btn-label">Upload en cours...</div></div>';
+  const icsUrl = await uploadICSToStorage(previewAppel, t);
+  if(btn) btn.innerHTML = origHTML;
+  const c = DB.clientById(previewAppel.cid);
+  const datesStr = previewAppel.dates && previewAppel.dates.length > 1
+    ? previewAppel.dates.map(d => fmtDate(d)).join(', ')
+    : fmtDate(previewAppel.date);
+  const msg = encodeURIComponent(
+    'Bonjour ' + t.prenom + ',\n\n' +
+    'Tu as un appel de service B-Mak :\n' +
+    '📋 ' + previewAppel.titre + '\n' +
+    '🏭 ' + (c ? c.nom : '') + '\n' +
+    (c && c.adresse ? '📍 ' + c.adresse + ', ' + c.ville + '\n' : '') +
+    '📅 ' + datesStr + ' à ' + previewAppel.heure + '\n' +
+    (previewAppel.prio === 'Urgente' ? '⚠️ URGENTE\n' : '') +
+    (previewAppel.notes ? '📝 ' + previewAppel.notes + '\n' : '') +
+    (icsUrl ? '\n📆 Ajouter à ton calendrier :\n' + icsUrl : '') +
+    '\n\nBonne journée!\n— B-Mak ServicePro'
+  );
+  window.location.href = 'sms:' + t.cell.replace(/\D/g,'') + '?body=' + msg;
+}
+
+async function doSendEmailPreview() {
+  const techName = document.getElementById('appel-tech').value;
+  const t = techName ? (LS.get('techs')||[]).find(x => x.prenom+' '+x.nom === techName) : null;
+  if(!t || !t.email) return;
+  const previewAppel = {
+    id: 'preview-' + Date.now(),
+    cid: selClient ? selClient.id : '',
+    mid: document.getElementById('appel-machine').value || null,
+    titre: document.getElementById('appel-titre').value.trim() || 'Appel de service',
+    date: selectedDates[0] || today,
+    dates: selectedDates,
+    heure: document.getElementById('appel-heure').value || '08:00',
+    notes: document.getElementById('appel-notes').value,
+    prio: newPrio, tech: techName,
+  };
+  const btn = event.target.closest('.send-btn');
+  const origHTML = btn ? btn.innerHTML : '';
+  if(btn) btn.innerHTML = '<span class="send-btn-ico">⏳</span><div><div class="send-btn-label">Upload en cours...</div></div>';
+  const icsUrl = await uploadICSToStorage(previewAppel, t);
+  if(btn) btn.innerHTML = origHTML;
+  const c = DB.clientById(previewAppel.cid);
+  const m = previewAppel.mid ? DB.machineById(previewAppel.mid) : null;
+  const datesStr = previewAppel.dates && previewAppel.dates.length > 1
+    ? previewAppel.dates.map(d => fmtDate(d)).join('\n   ')
+    : fmtDate(previewAppel.date);
+  const subj = encodeURIComponent('[B-Mak] Appel de service — ' + (c ? c.nom : '') + ' — ' + previewAppel.titre);
+  const body = encodeURIComponent(
+    'Bonjour ' + t.prenom + ',\n\n' +
+    'Tu as un ou plusieurs appels de service B-Mak. Voici les détails :\n\n' +
+    '📋 Description : ' + previewAppel.titre + '\n' +
+    '🏭 Client : ' + (c ? c.nom : '') + '\n' +
+    (c && c.adresse ? '📍 Adresse : ' + c.adresse + ', ' + c.ville + ', ' + c.province + '\n' : '') +
+    (c && c.tel ? '📞 Tél. client : ' + c.tel + '\n' : '') +
+    (m ? '🔧 Machine : ' + m.type + ' (' + m.marque + (m.serial ? ' · S/N: ' + m.serial : '') + ')\n' : '') +
+    '📅 Date(s) :\n   ' + datesStr + '\n' +
+    '🕐 Heure : ' + previewAppel.heure + '\n' +
+    (previewAppel.prio === 'Urgente' ? '\n⚠️ PRIORITÉ URGENTE\n' : '') +
+    (previewAppel.notes ? '\n📝 Notes : ' + previewAppel.notes + '\n' : '') +
+    (icsUrl ? '\n\n📆 Ajouter à ton calendrier (clique pour ouvrir) :\n' + icsUrl : '') +
+    '\n\nCordialement,\nB-Mak ServicePro'
+  );
+  window.location.href = 'mailto:' + t.email + '?subject=' + subj + '&body=' + body;
+}
+
 function previewExportICS(){
   const titre=document.getElementById('appel-titre').value.trim()||'appel';
   const techName=document.getElementById('appel-tech').value;
