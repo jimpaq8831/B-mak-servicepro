@@ -338,7 +338,7 @@ function renderCal(){
     else if(i>=first+days){d=i-first-days+1;m=calMonth+1;if(m>11){m=0;y++;}other=true;}
     else d=i-first+1;
     const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    const evs=appels.filter(a=>a.date===ds);
+    const evs=appels.filter(a=>a.date===ds&&a.statut!=='Archivé');
     const isSel=ds===selDate;
     const isToday=ds===today;
     const urgentCount=evs.filter(a=>a.prio==='Urgente').length;
@@ -353,7 +353,7 @@ function renderCal(){
 
 function selectDay(date){
   selDate=date; renderCal();
-  const evs=DB.appelsSync().filter(a=>a.date===date&&a.date!=='0000-00-00'&&a.statut!=='Terminé').sort((a,b)=>a.heure.localeCompare(b.heure));
+  const evs=DB.appelsSync().filter(a=>a.date===date&&a.date!=='0000-00-00'&&a.statut!=='Terminé'&&a.statut!=='Archivé').sort((a,b)=>a.heure.localeCompare(b.heure));
   document.getElementById('day-section').style.display='block';
   document.getElementById('day-title').textContent=fmtDate(date)+(evs.length?' — '+evs.length+' appel(s)':' — Aucun appel');
   renderDayEvents(evs);
@@ -362,6 +362,7 @@ function selectDay(date){
 function attachCardEvents(container){
   container.querySelectorAll('.rapport-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();startRapport(this.dataset.id);}));
   container.querySelectorAll('.edit-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();editAppel(this.dataset.id);}));
+  container.querySelectorAll('.arch-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();archiveAppel(this.dataset.id);}));
   container.querySelectorAll('.del-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();deleteAppel(this.dataset.id);}));
   container.querySelectorAll('.ics-btn').forEach(b=>b.addEventListener('click',function(e){e.stopPropagation();doExportICS(this.dataset.id);}));
 }
@@ -403,6 +404,7 @@ function appelCardHTML(a){
     '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;margin-left:8px">'+
     '<button class="rapport-btn" data-id="'+a.id+'" style="background:none;border:none;cursor:pointer;font-size:18px" title="Créer rapport">📋</button>'+
     '<button class="edit-btn" data-id="'+a.id+'" style="background:none;border:none;cursor:pointer;font-size:18px" title="Modifier">✏️</button>'+
+    (statut==='Terminé'?'<button class="arch-btn" data-id="'+a.id+'" style="background:none;border:none;cursor:pointer;font-size:18px" title="Archiver">📦</button>':'')+
     '<button class="del-btn" data-id="'+a.id+'" style="background:none;border:none;cursor:pointer;font-size:18px" title="Supprimer">🗑️</button>'+
     '</div></div>';
   // Attach events with data attributes — no inline onclick = no quote issues
@@ -447,8 +449,8 @@ function renderAllAppels(){
   let appels;
   if(_activeFilters.size === 0){
     // Default: show all non-Terminé
-    const undated = allAppels.filter(a=>(!a.date||a.date==='0000-00-00')&&a.statut!=='Terminé');
-    const dated = allAppels.filter(a=>a.date&&a.date!=='0000-00-00'&&a.date>=today&&a.statut!=='Terminé').sort((a,b)=>a.date.localeCompare(b.date)||a.heure.localeCompare(b.heure));
+    const undated = allAppels.filter(a=>(!a.date||a.date==='0000-00-00')&&a.statut!=='Terminé'&&a.statut!=='Archivé');
+    const dated = allAppels.filter(a=>a.date&&a.date!=='0000-00-00'&&a.date>=today&&a.statut!=='Terminé'&&a.statut!=='Archivé').sort((a,b)=>a.date.localeCompare(b.date)||a.heure.localeCompare(b.heure));
     appels = [...undated, ...dated];
   } else {
     // Show selected statuts
@@ -868,6 +870,15 @@ function editAppel(id){
   }
   updateSendSection();
   document.getElementById('modal-appel').style.display='flex';
+}
+
+async function archiveAppel(id){
+  const allAppels = DB.appelsSync();
+  const appel = allAppels.find(a=>a.id===id);
+  if(!appel) return;
+  await DB.saveAppel({...appel, statut:'Archivé'});
+  renderCal(); renderAllAppels();
+  if(selDate) selectDay(selDate);
 }
 
 async function deleteAppel(id){
