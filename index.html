@@ -102,14 +102,14 @@ async function init() {
     {n:clients.length,l:'Clients'},
     {n:machines.length,l:'Machines'},
     {n:rapports.length,l:'Rapports'},
-    {n:appels.filter(a=>a.statut!=='Terminé').length,l:'Appels à venir'}
+    {n:appels.filter(a=>a.statut!=='Terminé'&&a.statut!=='Archivé').length,l:'Appels à venir'}
   ].map(s=>'<div class="stat"><div class="stat-n">'+s.n+'</div><div class="stat-l">'+s.l+'</div></div>').join('');
 
   // Prochains appels (7 jours)
   const week=new Date(Date.now()+7*864e5).toISOString().split('T')[0];
   // Include: dated appels this week + undated Non-cédulé/En attente
-  const dated=appels.filter(a=>a.date&&a.date!=='0000-00-00'&&a.date>=today&&a.date<=week);
-  const undated=appels.filter(a=>(!a.date||a.date==='0000-00-00')&&(a.statut==='Non-cédulé'||a.statut==='En attente'));
+  const dated=appels.filter(a=>a.date&&a.date!=='0000-00-00'&&a.date>=today&&a.date<=week&&a.statut!=='Terminé'&&a.statut!=='Archivé');
+  const undated=appels.filter(a=>(!a.date||a.date==='0000-00-00')&&(a.statut==='Non-cédulé'||a.statut==='En attente')&&a.statut!=='Archivé');
   const prochains=[...dated.sort((a,b)=>a.date.localeCompare(b.date)),...undated].slice(0,4);
   const elA=document.getElementById('appels-today');
   if(!prochains.length){elA.innerHTML='<div class="empty"><div class="empty-ico">📅</div><div class="empty-txt">Aucun appel cette semaine</div></div>';}
