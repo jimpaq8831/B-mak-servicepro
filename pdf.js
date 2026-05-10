@@ -121,10 +121,18 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
     const photos = Array.isArray(t.photos) ? t.photos : [];
     if(photos.length) {
       if(y > 200) { doc.addPage(); y = 18; }
-      const cols = 3, iw = (W-margin*2-cols*4)/cols, ih = 40;
+      const cols = 3, iw = (W-margin*2-cols*4)/cols;
+      // Track row height per row (photos may have different ratios)
+      let rowMaxH = 0;
       photos.slice(0,9).forEach((src, pi) => {
-        if(pi % cols === 0 && pi > 0) y += ih + 5;
-        if(y + ih > 262) { doc.addPage(); y = 18; }
+        // Calculate actual image dimensions to preserve ratio
+        const tmpImg = new Image();
+        tmpImg.src = src;
+        const ratio = tmpImg.naturalHeight > 0 ? tmpImg.naturalWidth / tmpImg.naturalHeight : 1;
+        const ih = Math.min(40, iw / (ratio > 0 ? ratio : 1));
+        rowMaxH = Math.max(rowMaxH, ih);
+        if(pi % cols === 0 && pi > 0) { y += rowMaxH + 5; rowMaxH = 0; }
+        if(y + ih > 262) { doc.addPage(); y = 18; rowMaxH = 0; }
         const col = pi % cols;
         const px = margin + col*(iw+4);
         try {
