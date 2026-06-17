@@ -1,0 +1,19 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+      - cron: '0 8 * * *'
+        workflow_dispatch:
+
+        jobs:
+          ping:
+              runs-on: ubuntu-latest
+                  steps:
+                        - name: Ping Supabase
+                                run: |
+                                          curl -s \
+                                                      -X GET \
+                                                                  "https://rkvqnuljitffyiczbqky.supabase.co/rest/v1/clients?select=id&limit=1" \
+                                                                              -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrdnFudWxqaXRmZnlpY3picWt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTExMDYsImV4cCI6MjA5MzY4NzEwNn0.-6Taz1hg9n_TnrG7sgT4k_KqpJGtPFDEh6tsaTWU5r0" \
+                                                                                          -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrdnFudWxqaXRmZnlpY3picWt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTExMDYsImV4cCI6MjA5MzY4NzEwNn0.-6Taz1hg9n_TnrG7sgT4k_KqpJGtPFDEh6tsaTWU5r0" \
+                                                                                                      && echo "Supabase is alive!"
