@@ -204,7 +204,7 @@ async function regenPDF(id){
   if(!r){ alert('Rapport introuvable'); return; }
   const c = DB.clientById(r.cid);
   if(!c){ alert('Client introuvable.'); return; }
-  try { buildReportPDF(r); } catch(e){ alert('Erreur PDF: '+e.message); }
+  await preloadImgDims(r); try { buildReportPDF(r); } catch(e){ alert('Erreur PDF: '+e.message); }
 }
 
 function continueDraft(id){
