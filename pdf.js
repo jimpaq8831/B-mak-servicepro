@@ -1,7 +1,7 @@
 // ── B-Mak ServicePro — pdf.js ──
 // Shared PDF builder. Used by rapport.html and historique.html.
 
-function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOverride) {
+async function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOverride) {
   const jsPDF = window.jspdf.jsPDF;
   const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'letter'});
   const W = 215.9, margin = 16; let y = 0;
@@ -118,34 +118,31 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
     if(photos.length) {
       if(y > 200) { doc.addPage(); y = 18; }
       const iw = (W-margin*2-6)/2;
-      const maxIh = 65;
+      const maxIh = 70;
+      // Pré-charger les images pour obtenir les vraies dimensions
+      const loadedImgs = await Promise.all(photos.slice(0,6).map(src => new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve({src, w: img.naturalWidth, h: img.naturalHeight});
+        img.onerror = () => resolve({src, w: 1, h: 1});
+        img.src = src;
+      })));
       let rowY = y, rowMaxH = 0;
-      photos.slice(0,6).forEach((src, pi) => {
+      loadedImgs.forEach(({src, w, h}, pi) => {
+        const ih = w > 0 ? Math.min(maxIh, iw * h / w) : maxIh;
         const col = pi % 2;
-        const px = margin + col*(iw+6);
-        const fmt = (typeof src === 'string' && src.startsWith('data:image/png')) ? 'PNG' : 'JPEG';
-        // Calcul du ratio réel via getImageProperties (synchrone, fonctionne avec base64 et URL)
-        let ih = maxIh;
-        try {
-          // addImage avec height=0 → jsPDF calcule automatiquement la hauteur selon le ratio
-          doc.addImage(src, fmt, px, rowY, iw, 0, '', 'FAST');
-          // Récupérer la hauteur calculée via les propriétés
-          const props = doc.getImageProperties(src);
-          if(props && props.width > 0 && props.height > 0) {
-            ih = Math.min(maxIh, iw * props.height / props.width);
-          }
-          // Redessiner à la bonne hauteur
-          doc.addImage(src, fmt, px, rowY, iw, ih, '', 'FAST');
-        } catch(e) {
-          try { doc.addImage(src, fmt, px, rowY, iw, ih, '', 'FAST'); } catch(e2) {}
-        }
         if(pi > 0 && col === 0) { rowY += rowMaxH + 6; rowMaxH = 0; }
         rowMaxH = Math.max(rowMaxH, ih);
         if(rowY + ih > 265) { doc.addPage(); rowY = 18; rowMaxH = ih; }
-        doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
-        doc.rect(px, rowY, iw, ih, 'S');
-        doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(150,150,150);
-        doc.text('Photo '+(pi+1), px+2, rowY+ih-2);
+        const px = margin + col*(iw+6);
+        try {
+          const fmt = (src && src.startsWith('data:image/png')) ? 'PNG' : 'JPEG';
+          doc.addImage(src, fmt, px, rowY, iw, ih, '', 'FAST');
+          doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
+          doc.rect(px, rowY, iw, ih, 'S');
+          doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(150,150,150);
+          doc.text('Photo '+(pi+1), px+2, rowY+ih-2);
+        } catch(e) { console.warn('photo err', e); }
       });
       y = rowY + rowMaxH + 9;
     }
