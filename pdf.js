@@ -121,27 +121,31 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
       const maxIh = 65;
       let rowY = y, rowMaxH = 0;
       photos.slice(0,6).forEach((src, pi) => {
-        // getImageProperties retourne les vraies dimensions sans charger async
+        const col = pi % 2;
+        const px = margin + col*(iw+6);
+        const fmt = (typeof src === 'string' && src.startsWith('data:image/png')) ? 'PNG' : 'JPEG';
+        // Calcul du ratio réel via getImageProperties (synchrone, fonctionne avec base64 et URL)
         let ih = maxIh;
         try {
+          // addImage avec height=0 → jsPDF calcule automatiquement la hauteur selon le ratio
+          doc.addImage(src, fmt, px, rowY, iw, 0, '', 'FAST');
+          // Récupérer la hauteur calculée via les propriétés
           const props = doc.getImageProperties(src);
           if(props && props.width > 0 && props.height > 0) {
             ih = Math.min(maxIh, iw * props.height / props.width);
           }
-        } catch(e) { ih = maxIh; }
-        const col = pi % 2;
+          // Redessiner à la bonne hauteur
+          doc.addImage(src, fmt, px, rowY, iw, ih, '', 'FAST');
+        } catch(e) {
+          try { doc.addImage(src, fmt, px, rowY, iw, ih, '', 'FAST'); } catch(e2) {}
+        }
         if(pi > 0 && col === 0) { rowY += rowMaxH + 6; rowMaxH = 0; }
         rowMaxH = Math.max(rowMaxH, ih);
         if(rowY + ih > 265) { doc.addPage(); rowY = 18; rowMaxH = ih; }
-        const px = margin + col*(iw+6);
-        try {
-          const fmt = (typeof src === 'string' && src.startsWith('data:image/png')) ? 'PNG' : 'JPEG';
-          doc.addImage(src, fmt, px, rowY, iw, ih, '', 'FAST');
-          doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
-          doc.rect(px, rowY, iw, ih, 'S');
-          doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(150,150,150);
-          doc.text('Photo '+(pi+1), px+2, rowY+ih-2);
-        } catch(e) {}
+        doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
+        doc.rect(px, rowY, iw, ih, 'S');
+        doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(150,150,150);
+        doc.text('Photo '+(pi+1), px+2, rowY+ih-2);
       });
       y = rowY + rowMaxH + 9;
     }
