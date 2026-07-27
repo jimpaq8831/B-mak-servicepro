@@ -135,19 +135,33 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
     const photos = Array.isArray(t.photos) ? t.photos : [];
     if(photos.length) {
       if(y > 200) { doc.addPage(); y = 18; }
-      const iw = (W-margin*2-6)/2;
-      const maxIh = 65;
-      // Utiliser les dimensions pre-calculées (chargées avant le rendu)
+      const maxColW = (W-margin*2-6)/2; // largeur max par colonne
+      const maxIh = 65; // hauteur max
       let rowY = y, rowMaxH = 0;
       photos.slice(0,6).forEach((src, pi) => {
-        // Récupérer les dimensions depuis le cache _imgDims
+        // Dimensions réelles depuis cache preloadImgDims
         const dims = window._imgDims && window._imgDims[src];
-        const ih = (dims && dims.w > 0) ? Math.min(maxIh, iw * dims.h / dims.w) : maxIh;
+        // Calculer w et h en préservant le ratio dans les limites max
+        let iw = maxColW, ih = maxIh;
+        if(dims && dims.w > 0 && dims.h > 0) {
+          const ratio = dims.w / dims.h; // ex: 0.75 pour portrait 768x1024
+          if(ratio >= 1) {
+            // Paysage: fixer largeur, calculer hauteur
+            iw = maxColW;
+            ih = Math.min(maxIh, iw / ratio);
+          } else {
+            // Portrait: fixer hauteur, calculer largeur
+            ih = maxIh;
+            iw = Math.min(maxColW, ih * ratio);
+          }
+        }
         const col = pi % 2;
         if(pi > 0 && col === 0) { rowY += rowMaxH + 6; rowMaxH = 0; }
         rowMaxH = Math.max(rowMaxH, ih);
         if(rowY + ih > 265) { doc.addPage(); rowY = 18; rowMaxH = ih; }
-        const px = margin + col*(iw+6);
+        // Centrer dans la colonne
+        const colStart = margin + col*(maxColW+6);
+        const px = colStart + (maxColW - iw) / 2;
         try {
           const fmt = (src && src.startsWith('data:image/png')) ? 'PNG' : 'JPEG';
           doc.addImage(src, fmt, px, rowY, iw, ih, '', 'FAST');
