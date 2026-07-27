@@ -468,7 +468,7 @@ function fillReview(){
 }
 
 // PDF GENERATION
-function genPDF() {
+async function genPDF() {
   // Re-download PDF for last saved rapport (used on success screen)
   try {
     const r = {
