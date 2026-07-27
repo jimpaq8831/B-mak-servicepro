@@ -118,17 +118,17 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
     if(photos.length) {
       if(y > 200) { doc.addPage(); y = 18; }
       const iw = (W-margin*2-6)/2;
-      const maxIh = 60;
+      const maxIh = 65;
       let rowY = y, rowMaxH = 0;
       photos.slice(0,6).forEach((src, pi) => {
+        // getImageProperties retourne les vraies dimensions sans charger async
         let ih = maxIh;
         try {
-          const tmp = new Image();
-          tmp.src = src;
-          if(tmp.naturalWidth > 0 && tmp.naturalHeight > 0) {
-            ih = Math.min(maxIh, iw * tmp.naturalHeight / tmp.naturalWidth);
+          const props = doc.getImageProperties(src);
+          if(props && props.width > 0 && props.height > 0) {
+            ih = Math.min(maxIh, iw * props.height / props.width);
           }
-        } catch(e) {}
+        } catch(e) { ih = maxIh; }
         const col = pi % 2;
         if(pi > 0 && col === 0) { rowY += rowMaxH + 6; rowMaxH = 0; }
         rowMaxH = Math.max(rowMaxH, ih);
@@ -136,7 +136,7 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
         const px = margin + col*(iw+6);
         try {
           const fmt = (typeof src === 'string' && src.startsWith('data:image/png')) ? 'PNG' : 'JPEG';
-          doc.addImage(src, fmt, px, rowY, iw, ih, '', 'NONE');
+          doc.addImage(src, fmt, px, rowY, iw, ih, '', 'FAST');
           doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
           doc.rect(px, rowY, iw, ih, 'S');
           doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(150,150,150);
