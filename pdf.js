@@ -1,7 +1,25 @@
+// ── Précharge les dimensions de toutes les photos avant génération PDF ──
+async function preloadImgDims(rapportData) {
+  window._imgDims = window._imgDims || {};
+  const photos = [];
+  (rapportData.taches || []).forEach(t => {
+    (Array.isArray(t.photos) ? t.photos : []).forEach(src => {
+      if(src && !window._imgDims[src]) photos.push(src);
+    });
+  });
+  await Promise.all(photos.map(src => new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { window._imgDims[src] = {w: img.naturalWidth, h: img.naturalHeight}; resolve(); };
+    img.onerror = () => { window._imgDims[src] = {w: 4, h: 3}; resolve(); }; // fallback 4:3
+    img.src = src;
+  })));
+}
+
 // ── B-Mak ServicePro — pdf.js ──
 // Shared PDF builder. Used by rapport.html and historique.html.
 
-async function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOverride) {
+function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOverride) {
   const jsPDF = window.jspdf.jsPDF;
   const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'letter'});
   const W = 215.9, margin = 16; let y = 0;
@@ -118,18 +136,13 @@ async function buildReportPDF(r, selClientOverride, selMachineOverride, savedSig
     if(photos.length) {
       if(y > 200) { doc.addPage(); y = 18; }
       const iw = (W-margin*2-6)/2;
-      const maxIh = 70;
-      // Pré-charger les images pour obtenir les vraies dimensions
-      const loadedImgs = await Promise.all(photos.slice(0,6).map(src => new Promise(resolve => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => resolve({src, w: img.naturalWidth, h: img.naturalHeight});
-        img.onerror = () => resolve({src, w: 1, h: 1});
-        img.src = src;
-      })));
+      const maxIh = 65;
+      // Utiliser les dimensions pre-calculées (chargées avant le rendu)
       let rowY = y, rowMaxH = 0;
-      loadedImgs.forEach(({src, w, h}, pi) => {
-        const ih = w > 0 ? Math.min(maxIh, iw * h / w) : maxIh;
+      photos.slice(0,6).forEach((src, pi) => {
+        // Récupérer les dimensions depuis le cache _imgDims
+        const dims = window._imgDims && window._imgDims[src];
+        const ih = (dims && dims.w > 0) ? Math.min(maxIh, iw * dims.h / dims.w) : maxIh;
         const col = pi % 2;
         if(pi > 0 && col === 0) { rowY += rowMaxH + 6; rowMaxH = 0; }
         rowMaxH = Math.max(rowMaxH, ih);
