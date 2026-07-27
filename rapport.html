@@ -481,7 +481,7 @@ function genPDF() {
       cid: selClient ? selClient.id : null,
       mid: selMachine ? selMachine.id : null
     };
-    buildReportPDF(r, selClient, selMachine, savedSigImg);
+    await preloadImgDims(r); buildReportPDF(r, selClient, selMachine, savedSigImg);
   } catch(e) { alert('Erreur PDF: ' + e.message); }
 }
 
