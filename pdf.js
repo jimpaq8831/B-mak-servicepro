@@ -108,7 +108,7 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
     if(y > 240) { doc.addPage(); y = 18; }
     section('TÂCHE '+(i+1)+(t.itype?' — '+t.itype.toUpperCase():''), 'TASK '+(i+1));
 
-    const dlines = doc.splitTextToSize(t.desc||'—', W-margin*2-8);
+    const dlines = doc.splitTextToSize(t.desc||'—', W-margin*2-16);
     const dh = Math.max(16, dlines.length*5+6);
     doc.setFillColor(255,255,255); doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
     doc.roundedRect(margin, y, W-margin*2, dh, 2, 2, 'FD');
@@ -123,7 +123,7 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
       doc.text('ÉTAT: '+t.etat, margin+4, y+9); y += 17;
     }
     if(t.reco) {
-      const rlines = doc.splitTextToSize(t.reco, W-margin*2-8);
+      const rlines = doc.splitTextToSize(t.reco, W-margin*2-16);
       const rh = Math.max(14, rlines.length*5+6);
       doc.setFillColor(255,248,238); doc.setDrawColor(180,80,0); doc.setLineWidth(0.3);
       doc.roundedRect(margin, y, W-margin*2, rh, 2, 2, 'FD');
