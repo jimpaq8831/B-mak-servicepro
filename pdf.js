@@ -112,8 +112,8 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
     const dh = Math.max(16, dlines.length*5+6);
     doc.setFillColor(255,255,255); doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
     doc.roundedRect(margin, y, W-margin*2, dh, 2, 2, 'FD');
-    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...C.navy);
-    doc.text(dlines, margin+4, y+6); y += dh+4;
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...C.navy);
+    doc.text(dlines, margin+4, y+6, {maxWidth: W-margin*2-8}); y += dh+4;
 
     if(t.etat) {
       const s = statusSty(t.etat);
@@ -130,7 +130,7 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
       doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(180,80,0);
       doc.text('RECOMMANDATIONS', margin+4, y+5);
       doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...C.navy);
-      doc.text(rlines, margin+4, y+11); y += rh+6;
+      doc.text(rlines, margin+4, y+11, {maxWidth: W-margin*2-8}); y += rh+6;
     }
     const photos = Array.isArray(t.photos) ? t.photos : [];
     if(photos.length) {
