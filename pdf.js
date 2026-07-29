@@ -110,12 +110,14 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
 
     const dlines = doc.splitTextToSize(t.desc||'—', W-margin*2-16);
     const dh = Math.max(16, dlines.length*5+6);
+    if(y + dh > 260) { doc.addPage(); y = 18; }
     doc.setFillColor(255,255,255); doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
     doc.roundedRect(margin, y, W-margin*2, dh, 2, 2, 'FD');
     doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...C.navy);
     doc.text(dlines, margin+4, y+6, {maxWidth: W-margin*2-8}); y += dh+4;
 
     if(t.etat) {
+      if(y > 250) { doc.addPage(); y = 18; }
       const s = statusSty(t.etat);
       doc.setFillColor(...hexToRgb(s.bg)); doc.setDrawColor(...hexToRgb(s.border)); doc.setLineWidth(0.4);
       doc.roundedRect(margin, y, W-margin*2, 12, 2, 2, 'FD');
@@ -125,6 +127,7 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
     if(t.reco) {
       const rlines = doc.splitTextToSize(t.reco, W-margin*2-16);
       const rh = Math.max(14, rlines.length*5+6);
+      if(y + rh > 260) { doc.addPage(); y = 18; }
       doc.setFillColor(255,248,238); doc.setDrawColor(180,80,0); doc.setLineWidth(0.3);
       doc.roundedRect(margin, y, W-margin*2, rh, 2, 2, 'FD');
       doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(180,80,0);
