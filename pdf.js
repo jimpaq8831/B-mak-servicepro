@@ -184,17 +184,7 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
   doc.setFillColor(...C.gray); doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
   doc.roundedRect(margin, y, W-margin*2, 46, 2, 2, 'FD');
   doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(...C.teal);
-  doc.text('SIGNATURE CLIENT / CLIENT SIGNATURE', margin+4, y+7);
-  if(r.signer) {
-    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...C.text3);
-    doc.text('Signé par: '+r.signer, margin+4, y+13);
-  }
-  if(sigImg) {
-    try {
-      const fmt = sigImg.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
-      doc.addImage(sigImg, fmt, margin+4, y+15, 68, 24);
-    } catch(e) { console.warn('Signature image error:', e); }
-  }
+  doc.text('RAPPORT COMPLÉTÉ PAR / COMPLETED BY', margin+4, y+7);
   doc.setDrawColor(...C.border); doc.setLineWidth(0.4);
   doc.line(W-margin-60, y+36, W-margin-4, y+36);
   doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...C.navy);
