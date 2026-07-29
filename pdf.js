@@ -182,7 +182,7 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
   // ── Signature ──
   if(y > 210) { doc.addPage(); y = 18; }
   doc.setFillColor(...C.gray); doc.setDrawColor(...C.border); doc.setLineWidth(0.3);
-  doc.roundedRect(margin, y, W-margin*2, 46, 2, 2, 'FD');
+  doc.roundedRect(margin, y, W-margin*2, 22, 2, 2, 'FD');
   doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(...C.teal);
   doc.text('RAPPORT COMPLÉTÉ PAR / COMPLETED BY', margin+4, y+7);
   doc.setDrawColor(...C.border); doc.setLineWidth(0.4);
