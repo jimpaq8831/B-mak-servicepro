@@ -185,12 +185,10 @@ function buildReportPDF(r, selClientOverride, selMachineOverride, savedSigImgOve
   doc.roundedRect(margin, y, W-margin*2, 22, 2, 2, 'FD');
   doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(...C.teal);
   doc.text('RAPPORT COMPLÉTÉ PAR / COMPLETED BY', margin+4, y+7);
-  doc.setDrawColor(...C.border); doc.setLineWidth(0.4);
-  doc.line(W-margin-60, y+36, W-margin-4, y+36);
-  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...C.navy);
-  doc.text(tech, W-margin-4, y+33, {align:'right'});
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...C.navy);
+  doc.text(tech, margin+4, y+16);
   doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...C.text3);
-  doc.text('Technicien', W-margin-4, y+42, {align:'right'});
+  doc.text('Technicien / Technician', margin+4, y+22);
 
   // ── Footer ──
   doc.setFillColor(...C.navy); doc.rect(0, 270, W, 9.4, 'F');
